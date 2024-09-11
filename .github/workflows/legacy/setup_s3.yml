@@ -1,0 +1,54 @@
+# setup_s3.py
+name: Create S3 Versioned Folders
+
+on:
+    push:
+      branches:
+        - '**'
+
+jobs:
+  create-s3-versioned-folders:
+    if: contains(github.event.head_commit.message, '-setup_s3')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Set environment variables
+        run: |
+          echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" >> $GITHUB_ENV
+          echo "BUCKET_RAW=${{ secrets.BUCKET_RAW }}" >> $GITHUB_ENV
+          echo "BUCKET_PROCESSED=${{ secrets.BUCKET_PROCESSED }}" >> $GITHUB_ENV
+          echo "BUCKET_STAGING=${{ secrets.BUCKET_STAGING }}" >> $GITHUB_ENV
+          echo "PROJECT_NAME=${{ secrets.PROJECT_NAME }}" >> $GITHUB_ENV
+          
+      - name: Install Python dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install boto3 pytz
+
+      - name: Run s3 Setup Folders Script
+        run: |
+          source venv/bin/activate
+          python s3/code/setup_s3.py
+
+      - name: Commit and push URIs file
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p s3  # Ensure the s3 directory exists
+          cp uris/${{ github.ref_name }}_uris.json s3/
+          git add s3/${{ github.ref_name }}_uris.json
+          git commit -m "Add S3 URIs for branch ${{ github.ref_name }}"
+          git push
+        if: success()

@@ -1,1 +1,3 @@
-# deploy-handwritten-digit-classification-pytorch-hpo-sagemaker
+# CNN 
+
+deploy-handwritten-digit-classification-pytorch-hpo-sagemaker

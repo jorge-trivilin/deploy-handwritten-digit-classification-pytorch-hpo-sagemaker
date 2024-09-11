@@ -1,0 +1,39 @@
+name: Run linter workflow with Black and Ruff
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  run-linter-with-Black-and-Ruff:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x' 
+
+      - name: Cache dependencies 
+        uses: actions/cache@v3
+        with:
+          path: venv 
+          key: ${{ runner.os }}-python-${{ hashFiles('requirements.txt') }} 
+
+      - name: Install dependencies
+        run: |
+          python -m venv venv 
+          source venv/bin/activate
+          pip install --upgrade pip
+          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi 
+      - name: Run Black
+        run: |
+          source venv/bin/activate
+          black --check .
+      - name: Run Ruff
+        run: |
+          source venv/bin/activate
+          ruff .
