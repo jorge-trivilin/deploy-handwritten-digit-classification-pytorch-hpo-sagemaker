@@ -103,21 +103,21 @@ def get_pipeline(
         name="TrainingInstanceCount", default_value=1
     )
     training_instance_type = ParameterString(
-        name="TrainingInstanceType", default_value="ml.m5.xlarge"
+        name="TrainingInstanceType", default_value="ml.c5.2xlarge"
     )
 
     processing_instance_count = ParameterInteger(
         name="ProcessingInstanceCount", default_value=1
     )
     processing_instance_type = ParameterString(
-        name="ProcessingInstanceType", default_value="ml.m5.2xlarge"
+        name="ProcessingInstanceType", default_value="ml.c5.2xlarge"
     )
 
     # Passo de pré-processamento
     script_processor = ScriptProcessor(
         role=role,
         image_uri=image_uri,
-        command=["python3", "/opt/ml/code/entrypoint.py", "preprocessing.py"],
+        command=["python3"],
         instance_count=processing_instance_count,
         instance_type=processing_instance_type,
         sagemaker_session=pipeline_session,
@@ -173,7 +173,7 @@ def get_pipeline(
     script_evaluator = ScriptProcessor(
         role=role,
         image_uri=image_uri,
-        command=["python3", "/opt/ml/code/entrypoint.py", "evaluate.py"],
+        command=["python3"],
         instance_count=processing_instance_count,
         instance_type=processing_instance_type,
         sagemaker_session=pipeline_session,

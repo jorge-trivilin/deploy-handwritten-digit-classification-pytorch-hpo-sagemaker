@@ -16,10 +16,9 @@ RUN pip install --no-cache-dir -r /opt/ml/code/requirements.txt
 COPY preprocessing.py /opt/ml/code/preprocessing.py
 COPY cnn.py /opt/ml/code/train_pipeline.py
 COPY evaluate.py /opt/ml/code/evaluate.py
-COPY entrypoint.py /opt/ml/code/entrypoint.py
 
 # Defina o diretório de trabalho
 WORKDIR /opt/ml/code
 
 # Define o comando padrão para executar o entrypoint.py
-CMD ["python3", "/opt/ml/code/entrypoint.py"]
+CMD ["python3"]
