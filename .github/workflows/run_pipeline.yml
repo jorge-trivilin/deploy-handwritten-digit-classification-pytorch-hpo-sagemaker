@@ -10,6 +10,7 @@ jobs:
   run-pipeline:
     if: contains(github.event.head_commit.message, '-training')
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'staging' && 'staging' || 'development' }}
 
     steps:
       - name: Checkout code
@@ -44,6 +45,7 @@ jobs:
           echo "BUCKET_VALIDATION=${{ secrets.BUCKET_VALIDATION }}" >> $GITHUB_ENV
           echo "BUCKET_OUTPUT=${{ secrets.BUCKET_OUTPUT }}" >> $GITHUB_ENV
           echo "BUCKET_MODELS=${{ secrets.BUCKET_MODELS }}" >> $GITHUB_ENV
+          echo "ENV=${{ vars.ENV }}" >> $GITHUB_ENV
 
-      - name: Run SageMaker Pipeline
-        run: python airflow/code/train_pipeline.py
+      - name: Run Training Pipeline
+        run: python run_training_pipeline.py
