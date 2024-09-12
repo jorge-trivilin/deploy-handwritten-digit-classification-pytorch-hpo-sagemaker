@@ -87,7 +87,7 @@ variable "bucket_airflow" {
 # variable "database_name" {
   # type = string
   # description = "Nome do banco de dados"
-}
+#}
 
 variable "glue_service_role" {
   type = string
