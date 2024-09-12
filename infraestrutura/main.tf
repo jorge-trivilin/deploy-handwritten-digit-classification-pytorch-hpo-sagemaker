@@ -87,7 +87,7 @@ variable "bucket_airflow" {
 # variable "database_name" {
   # type = string
   # description = "Nome do banco de dados"
-#}
+}
 
 variable "glue_service_role" {
   type = string
@@ -201,8 +201,7 @@ resource "aws_s3_object" "models_folder" {
   content = ""
 }
 
-# Json files
-
+# Json files to be commited 
 
 resource "local_file" "image_uri" {
   filename = "${path.module}/image_uri.json"
