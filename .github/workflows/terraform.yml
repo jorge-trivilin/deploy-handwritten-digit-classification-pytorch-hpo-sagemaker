@@ -80,7 +80,6 @@ jobs:
           echo "TF_VAR_bucket_output: $TF_VAR_bucket_output"
           echo "TF_VAR_bucket_models: $TF_VAR_bucket_models"
           echo "TF_VAR_bucket_airflow: $TF_VAR_bucket_airflow"
-          echo "TF_VAR_database_name: $TF_VAR_database_name"
           echo "TF_VAR_glue_service_role: $TF_VAR_glue_service_role"
           echo "TF_VAR_project_name: $TF_VAR_project_name"
           echo "TF_VAR_sagemaker_role_arn: $TF_VAR_sagemaker_role_arn"
