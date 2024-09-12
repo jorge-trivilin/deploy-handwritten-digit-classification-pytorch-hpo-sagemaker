@@ -95,12 +95,22 @@ def get_pipeline(
         default_bucket=bucket_pipeline,
     )
 
-    # Definindo parâmetros do pipeline
-    model_approval_status = ParameterString(name="ModelApprovalStatus", default_value="PendingManualApproval")
-    training_instance_count = ParameterInteger(name="TrainingInstanceCount", default_value=1)
-    training_instance_type = ParameterString(name="TrainingInstanceType", default_value="ml.m5.xlarge")
-    processing_instance_count = ParameterInteger(name="ProcessingInstanceCount", default_value=1)
-    processing_instance_type = ParameterString(name="ProcessingInstanceType", default_value="ml.m5.2xlarge")
+    # Pipeline Parameters
+    model_approval_status = ParameterString(
+        name="ModelApprovalStatus", default_value="PendingManualApproval"
+    )
+    training_instance_count = ParameterInteger(
+        name="TrainingInstanceCount", default_value=1
+    )
+    training_instance_type = ParameterString(
+        name="TrainingInstanceType", default_value="ml.m5.xlarge"
+    )
+    processing_instance_count = ParameterInteger(
+        name="ProcessingInstanceCount", default_value=1
+    )
+    processing_instance_type = ParameterString(
+        name="ProcessingInstanceType", default_value="ml.m5.2xlarge"
+    )
 
     # Passo de pré-processamento
     script_processor = ScriptProcessor(
@@ -220,6 +230,9 @@ def get_pipeline(
             model_approval_status,
             training_instance_count,
             training_instance_type,
+            training_instance_type,
+            processing_instance_type
+
         ],
         steps=[preprocessing_step, training_step, evaluation_step, register_model_step],
         sagemaker_session=pipeline_session,
