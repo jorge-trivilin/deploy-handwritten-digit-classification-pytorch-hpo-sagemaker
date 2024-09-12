@@ -125,6 +125,7 @@ def get_pipeline(
                 destination=preprocessing_output_test_path,
             ),
         ],
+        code="train/preprocessing.py"
     )
 
     # Passo de treinamento
@@ -134,8 +135,10 @@ def get_pipeline(
         instance_type=training_instance_type,
         instance_count=training_instance_count,
         output_path=model_output_s3_path,
-        command=["python3", "/opt/ml/code/entrypoint.py", "cnn.py"],
+        command=["python3"],
+        entry_point="train/cnn.py",
         sagemaker_session=pipeline_session,
+        environment={"SAGEMAKER_PROGRAM": "cnn.py"},
     )
 
     training_step = TrainingStep(
@@ -185,7 +188,8 @@ def get_pipeline(
                 source="/opt/ml/processing/evaluation",  # Diretório onde o script "evaluate.py" salvará os resultados
                 destination=f"s3://{bucket_output}/{project_name}/evaluation/",  # Caminho de saída para os resultados no S3
             )
-        ]
+        ],
+        code="train/evaluate.py"
     )
 
     # Registro do modelo e métricas
