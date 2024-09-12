@@ -60,11 +60,11 @@ if __name__ == "__main__":
         print("Erro: Nome do script não fornecido.")
         sys.exit(1)
 
-    # Nome do script a ser executado e argumentos adicionais
+    # -- Nome do script a ser executado e argumentos adicionais --
     script_name = sys.argv[1]
     additional_args = sys.argv[2:]
 
-    # Verifica se os diretórios esperados pelo SageMaker estão presentes
+    # -- Verifica se os diretórios esperados pelo SageMaker estão presentes --
     verify_directories()
 
     # Verifica se há uma GPU disponível
