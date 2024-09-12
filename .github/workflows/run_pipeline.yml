@@ -10,7 +10,7 @@ jobs:
   run-pipeline:
     if: contains(github.event.head_commit.message, '-training')
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'staging' && 'staging' || 'development' }}
+    environment: ${{ github.ref_name == 'development' && 'development' || 'staging' }}
 
     steps:
       - name: Checkout code
@@ -38,7 +38,7 @@ jobs:
           echo "AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" >> $GITHUB_ENV
           echo "SAGEMAKER_ROLE_ARN=${{ secrets.SAGEMAKER_ROLE_ARN }}" >> $GITHUB_ENV
           echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
-          echo "PROJECT_NAME=rfm" >> $GITHUB_ENV
+          echo "PROJECT_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
           echo "BUCKET_RAW=${{ secrets.BUCKET_RAW }}" >> $GITHUB_ENV
           echo "BUCKET_PROCESSED=${{ secrets.BUCKET_PROCESSED }}" >> $GITHUB_ENV
           echo "BUCKET_STAGING=${{ secrets.BUCKET_STAGING }}" >> $GITHUB_ENV
@@ -46,6 +46,11 @@ jobs:
           echo "BUCKET_OUTPUT=${{ secrets.BUCKET_OUTPUT }}" >> $GITHUB_ENV
           echo "BUCKET_MODELS=${{ secrets.BUCKET_MODELS }}" >> $GITHUB_ENV
           echo "ENV=${{ vars.ENV }}" >> $GITHUB_ENV
+
+      - name: Read Image URI from JSON
+        run: |
+          IMAGE_URI=$(jq -r .image_uri infraestrutura/image_uri.json)
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
       - name: Run Training Pipeline
         run: python run_training_pipeline.py

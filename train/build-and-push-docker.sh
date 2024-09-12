@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Arguments
-account_id=650906427567
+account_id=$1
 region=us-east-1
-repo_name="rfm-clustering"
-tag_name=$1
+repo_name="iamdscli"
+tag_name=$2
 
 # Get the login command from ECR and execute it directly
 aws ecr get-login-password --region $region | docker login --username AWS --password-stdin $account_id.dkr.ecr.$region.amazonaws.com

@@ -24,9 +24,19 @@ variable "commit_version" {
   description = "Versão atual (SHA do commit)"
 }
 
+variable "environment" {
+  type        = string
+  description = "Github environment"
+}
+
 variable "aws_default_region" {
   type = string
   description = "Região padrão da AWS"
+}
+
+variable "aws_account_id" {
+  type = string
+  description = "AWS account ID"
 }
 
 variable "bucket_glue" {
@@ -94,10 +104,10 @@ variable "sagemaker_role_arn" {
   description = "ARN da role do SageMaker"
 }
 
-variable "source_table_name" {
-  type = string
-  description = "Nome da tabela de origem"
-}
+# variable "source_table_name" {
+  #type = string
+  #description = "Nome da tabela de origem"
+#}
 
 variable "image_uri" {
   type = string
@@ -191,59 +201,13 @@ resource "aws_s3_object" "models_folder" {
   content = ""
 }
 
-# -- s3 uploadS --
-resource "aws_s3_object" "glue_etl_script" {
-  bucket = var.bucket_glue
-  key    = "${var.project_name}/${var.branch_name}/${var.commit_version}/etl.py"
-  source = "../glue/scripts/etl.py"
-}
-
-resource "aws_s3_object" "glue_test_pre_processing_script" {
-  bucket = var.bucket_glue
-  key    = "${var.project_name}/${var.branch_name}/${var.commit_version}/test_pre_processing.py"
-  source = "../glue/scripts/test_pre_processing.py"
-}
-
-resource "aws_s3_object" "glue_train_pre_processing_script" {
-  bucket = var.bucket_glue
-  key    = "${var.project_name}/${var.branch_name}/${var.commit_version}/train_pre_processing.py"
-  source = "../glue/scripts/train_pre_processing.py"
-}
-
-# Recurso para criar o arquivo da DAG
-resource "local_file" "airflow_dag_script" {
-  content  = templatefile("${path.module}/../airflow/code/training_pipeline_dag.py.tpl", {
-    aws_default_region = var.aws_default_region,
-    sagemaker_role_arn = var.sagemaker_role_arn,
-    branch_name = var.branch_name,
-    project_name = var.project_name, 
-    bucket_raw = var.bucket_raw,
-    bucket_processed = var.bucket_processed,
-    bucket_staging = var.bucket_staging,
-    bucket_validation = var.bucket_validation,
-    bucket_output = var.bucket_output,
-    bucket_models = var.bucket_models,
-    bucket_airflow = var.bucket_airflow,
-    version = var.commit_version,
-    image_uri = var.image_uri  # Passa a versão do commit
-  })
-  filename = "${path.module}/../airflow/code/training_pipeline_dag.py"
-}
-
-# Recurso para enviar o arquivo da DAG para o S3
-resource "aws_s3_object" "airflow_dag_script" {
-  bucket = var.bucket_airflow
-  key    = "dags/${var.project_name}_${var.branch_name}_${var.commit_version}_training_pipeline_dag.py"  # Nome único para o arquivo no S3
-  source = "${path.module}/../airflow/code/training_pipeline_dag.py"  # Caminho para o arquivo original
-}
-
 # Json files
 
-# Recurso para gerar o nome da DAG em JSON
-resource "local_file" "training_dag_name" {
-  filename = "training_dag_name.json"
-  content  = jsonencode({
-    training_dag_name = "${var.project_name}_${var.branch_name}_training_dag_v${var.commit_version}"
+
+resource "local_file" "image_uri" {
+  filename = "${path.module}/image_uri.json"
+  content = jsonencode({
+    image_uri = var.image_uri
   })
 }
 
@@ -258,10 +222,12 @@ resource "local_file" "uris" {
     OUTPUT = "s3://${var.bucket_output}/${var.project_name}/${var.branch_name}/${var.commit_version}/",
     GLUE = "s3://${var.bucket_glue}/${var.project_name}/${var.branch_name}/${var.commit_version}/",
     PIPELINE = "s3://${var.bucket_pipeline}/${var.project_name}/${var.branch_name}/${var.commit_version}/",
-    GLUE_ETL_SCRIPT = "s3://${var.bucket_glue}/${var.project_name}/${var.branch_name}/${var.commit_version}/etl.py",
-    GLUE_TEST_PRE_PROCESSING_SCRIPT = "s3://${var.bucket_glue}/${var.project_name}/${var.branch_name}/${var.commit_version}/test_pre_processing.py",
-    GLUE_TRAIN_PRE_PROCESSING_SCRIPT = "s3://${var.bucket_glue}/${var.project_name}/${var.branch_name}/${var.commit_version}/train_pre_processing.py",
-    AIRFLOW_DAG_SCRIPT = "s3://${var.bucket_airflow}/dags/${var.project_name}_${var.branch_name}_${var.commit_version}_training_pipeline_dag.py", 
+    # GLUE_ETL_SCRIPT = "s3://${var.bucket_glue}/${var.project_name}/${var.branch_name}/${var.commit_version}/etl.py",
+    # GLUE_TEST_PRE_PROCESSING_SCRIPT = "s3://${var.bucket_glue}/${var.project_name}/${var.branch_name}/${var.commit_version}/test_pre_processing.py",
+    # GLUE_TRAIN_PRE_PROCESSING_SCRIPT = "s3://${var.bucket_glue}/${var.project_name}/${var.branch_name}/${var.commit_version}/train_pre_processing.py",
+    # AIRFLOW_DAG_SCRIPT = "s3://${var.bucket_airflow}/dags/${var.project_name}_${var.branch_name}_${var.commit_version}_training_pipeline_dag.py", 
     VERSION = var.commit_version
+    ENVIRONMENT = var.environment
   })
 }
+

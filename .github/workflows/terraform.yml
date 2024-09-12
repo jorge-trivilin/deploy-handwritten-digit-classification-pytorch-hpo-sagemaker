@@ -9,9 +9,11 @@ jobs:
   terraform:
     if: contains(github.event.head_commit.message, '-terraform')
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'development' && 'development' || 'staging' }}
 
-    env:  # Definir as variáveis de ambiente aqui
+    env:  # Defining environment variables
       TF_VAR_aws_default_region: ${{ secrets.AWS_DEFAULT_REGION }}
+      TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
       TF_VAR_bucket_glue: ${{ secrets.BUCKET_GLUE }}
       TF_VAR_bucket_pipeline: ${{ secrets.BUCKET_PIPELINE }}
       TF_VAR_bucket_processed: ${{ secrets.BUCKET_PROCESSED }}
@@ -21,12 +23,13 @@ jobs:
       TF_VAR_bucket_output: ${{ secrets.BUCKET_OUTPUT }}
       TF_VAR_bucket_models: ${{ secrets.BUCKET_MODELS }}
       TF_VAR_bucket_airflow: ${{ secrets.BUCKET_AIRFLOW }}
-      TF_VAR_database_name: ${{ secrets.DATABASE_NAME }}
+      #TF_VAR_database_name: ${{ secrets.DATABASE_NAME }}
       TF_VAR_glue_service_role: ${{ secrets.GLUE_SERVICE_ROLE }}
       TF_VAR_project_name: ${{ secrets.PROJECT_NAME }}
       TF_VAR_sagemaker_role_arn: ${{ secrets.SAGEMAKER_ROLE_ARN }}
-      TF_VAR_source_table_name: ${{ secrets.SOURCE_TABLE_NAME }}
+      #TF_VAR_source_table_name: ${{ secrets.SOURCE_TABLE_NAME }}
       TF_VAR_branch_name: ${{ github.ref_name }}
+      TF_VAR_environment: ${{ vars.ENV }}
 
     steps:
       - name: Checkout Code
@@ -61,12 +64,13 @@ jobs:
       - name: Run Docker Build and Push Script
         run: |
           chmod +x ./train/build-and-push-docker.sh
-          ./train/build-and-push-docker.sh ${{ steps.generate_commit_version.outputs.commit_version }}
+          ./train/build-and-push-docker.sh ${{ secrets.AWS_ACCOUNT_ID }} ${{ steps.generate_commit_version.outputs.commit_version }}
  
       - name: Verify Terraform Environment Variables
         run: |
           echo "Verifying Terraform Environment Variables..."
           echo "TF_VAR_aws_default_region: $TF_VAR_aws_default_region"
+          echo "TF_VAR_aws_account_id: $TF_VAR_aws_account_id"
           echo "TF_VAR_bucket_glue: $TF_VAR_bucket_glue"
           echo "TF_VAR_bucket_pipeline: $TF_VAR_bucket_pipeline"
           echo "TF_VAR_bucket_processed: $TF_VAR_bucket_processed"
@@ -84,6 +88,7 @@ jobs:
           echo "TF_VAR_branch_name: $TF_VAR_branch_name"
           echo "TF_VAR_commit_version: $TF_VAR_commit_version"
           echo "TF_VAR_image_uri: $TF_VAR_image_uri"
+          echo "TF_VAR_environment: $TF_VAR_environment"
           env | grep TF_VAR_
 
       - name: Terraform Init
@@ -98,10 +103,10 @@ jobs:
         run: terraform apply -auto-approve plan.out
         working-directory: ./infraestrutura
 
-      - name: Commit DAG Name and URIs
+      - name: Commit S3 URIs and Image URI
         uses: EndBug/add-and-commit@v9
         with:
           add: |
             infraestrutura/s3_uris.json
-            infraestrutura/training_dag_name.json
-          message: 'Update S3 URIs and DAG Name'
+            infraestrutura/image_uri.json
+          message: 'Update S3 URIs and Image URI'

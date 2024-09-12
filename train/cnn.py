@@ -5,19 +5,18 @@ import os
 import sys
 
 
-import torch
-import torch.distributed as dist
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import torch.utils.data
-import torch.utils.data.distributed
-from torchvision import datasets, transforms
+import torch # type: ignore
+import torch.distributed as dist # type: ignore
+import torch.nn as nn # type: ignore
+import torch.nn.functional as F # type: ignore
+import torch.optim as optim # type: ignore
+import torch.utils.data # type: ignore
+import torch.utils.data.distributed # type: ignore
+from torchvision import datasets, transforms # type: ignore
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
-
 
 # Based on https://github.com/pytorch/examples/blob/master/mnist/main.py
 class Net(nn.Module):
@@ -49,7 +48,9 @@ def _get_train_data_loader(batch_size, training_dir, is_distributed, **kwargs):
         ),
     )
     train_sampler = (
-        torch.utils.data.distributed.DistributedSampler(dataset) if is_distributed else None
+        torch.utils.data.distributed.DistributedSampler(dataset)
+        if is_distributed
+        else None
     )
     return torch.utils.data.DataLoader(
         dataset,
@@ -97,12 +98,16 @@ def train(args):
         world_size = len(args.hosts)
         os.environ["WORLD_SIZE"] = str(world_size)
         host_rank = args.hosts.index(args.current_host)
-        dist.init_process_group(backend=args.backend, rank=host_rank, world_size=world_size)
+        dist.init_process_group(
+            backend=args.backend, rank=host_rank, world_size=world_size
+        )
         logger.info(
             "Initialized the distributed environment: '{}' backend on {} nodes. ".format(
                 args.backend, dist.get_world_size()
             )
-            + "Current host rank is {}. Number of gpus: {}".format(dist.get_rank(), args.num_gpus)
+            + "Current host rank is {}. Number of gpus: {}".format(
+                dist.get_rank(), args.num_gpus
+            )
         )
 
     # set the seed for generating random numbers
@@ -110,7 +115,9 @@ def train(args):
     if use_cuda:
         torch.cuda.manual_seed(args.seed)
 
-    train_loader = _get_train_data_loader(args.batch_size, args.data_dir, is_distributed, **kwargs)
+    train_loader = _get_train_data_loader(
+        args.batch_size, args.data_dir, is_distributed, **kwargs
+    )
     test_loader = _get_test_data_loader(args.test_batch_size, args.data_dir, **kwargs)
 
     logger.debug(
@@ -173,14 +180,21 @@ def test(model, test_loader, device):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, size_average=False).item()  # sum up batch loss
-            pred = output.max(1, keepdim=True)[1]  # get the index of the max log-probability
+            test_loss += F.nll_loss(
+                output, target, size_average=False
+            ).item()  # sum up batch loss
+            pred = output.max(1, keepdim=True)[
+                1
+            ]  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
     logger.info(
         "Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
-            test_loss, correct, len(test_loader.dataset), 100.0 * correct / len(test_loader.dataset)
+            test_loss,
+            correct,
+            len(test_loader.dataset),
+            100.0 * correct / len(test_loader.dataset),
         )
     )
 
@@ -226,12 +240,22 @@ if __name__ == "__main__":
         help="number of epochs to train (default: 10)",
     )
     parser.add_argument(
-        "--lr", type=float, default=0.01, metavar="LR", help="learning rate (default: 0.01)"
+        "--lr",
+        type=float,
+        default=0.01,
+        metavar="LR",
+        help="learning rate (default: 0.01)",
     )
     parser.add_argument(
-        "--momentum", type=float, default=0.5, metavar="M", help="SGD momentum (default: 0.5)"
+        "--momentum",
+        type=float,
+        default=0.5,
+        metavar="M",
+        help="SGD momentum (default: 0.5)",
     )
-    parser.add_argument("--seed", type=int, default=1, metavar="S", help="random seed (default: 1)")
+    parser.add_argument(
+        "--seed", type=int, default=1, metavar="S", help="random seed (default: 1)"
+    )
     parser.add_argument(
         "--log-interval",
         type=int,
@@ -247,10 +271,16 @@ if __name__ == "__main__":
     )
 
     # Container environment
-    parser.add_argument("--hosts", type=list, default=json.loads(os.environ["SM_HOSTS"]))
-    parser.add_argument("--current-host", type=str, default=os.environ["SM_CURRENT_HOST"])
+    parser.add_argument(
+        "--hosts", type=list, default=json.loads(os.environ["SM_HOSTS"])
+    )
+    parser.add_argument(
+        "--current-host", type=str, default=os.environ["SM_CURRENT_HOST"]
+    )
     parser.add_argument("--model-dir", type=str, default=os.environ["SM_MODEL_DIR"])
-    parser.add_argument("--data-dir", type=str, default=os.environ["SM_CHANNEL_TRAINING"])
+    parser.add_argument(
+        "--data-dir", type=str, default=os.environ["SM_CHANNEL_TRAINING"]
+    )
     parser.add_argument("--num-gpus", type=int, default=os.environ["SM_NUM_GPUS"])
 
     train(parser.parse_args())

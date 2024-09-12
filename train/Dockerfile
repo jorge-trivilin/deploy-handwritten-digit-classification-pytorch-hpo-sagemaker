@@ -14,10 +14,8 @@ RUN pip install --no-cache-dir -r /opt/ml/code/requirements.txt
 
 # Copie os scripts necessários da pasta train/
 COPY preprocessing.py /opt/ml/code/preprocessing.py
-COPY train_pca.py /opt/ml/code/train_pca.py
-COPY postprocessing_pca.py /opt/ml/code/postprocessing_pca.py
-COPY train_kmeans_hpo.py /opt/ml/code/train_kmeans_hpo.py
-COPY kmeans_postprocessing.py /opt/ml/code/kmeans_postprocessing.py
+COPY cnn.py /opt/ml/code/train_pipeline.py
+COPY evaluate.py /opt/ml/code/evaluate.py
 COPY entrypoint.py /opt/ml/code/entrypoint.py
 
 # Defina o diretório de trabalho
