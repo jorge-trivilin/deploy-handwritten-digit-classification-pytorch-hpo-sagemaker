@@ -159,14 +159,12 @@ def get_pipeline(
             "train": TrainingInput(
                 s3_data=preprocessing_step.properties.ProcessingOutputConfig.Outputs[ # type: ignore
                     "train"
-                ].S3Output.S3Uri,
-                content_type="text/csv",
+                ].S3Output.S3Uri
             ),
             "test": TrainingInput(
                 s3_data=preprocessing_step.properties.ProcessingOutputConfig.Outputs[ # type: ignore
                     "test"
-                ].S3Output.S3Uri,
-                content_type="text/csv",
+                ].S3Output.S3Uri
             ),
         },
     )
