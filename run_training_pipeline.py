@@ -1,7 +1,7 @@
 # run_training_pipeline.py
 import os
 import logging
-from train.train_pipeline import get_pipeline
+from train.training_pipeline import get_pipeline # type: ignore
 import boto3
 
 logging.basicConfig(
