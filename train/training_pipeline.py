@@ -224,6 +224,7 @@ def get_pipeline(
         model_metrics=model_metrics,
     )
 
+    # Step dependencies 
     training_step.depends_on = [preprocessing_step]
     evaluation_step.depends_on = [training_step]
     register_model_step.depends_on = [evaluation_step]
