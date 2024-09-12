@@ -5,9 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import logging
 import sys
-from torchvision import transforms # type: ignore
 from torch.utils.data import DataLoader, Dataset
-import torch.optim as optim
 import json
 
 # Configuração do logger
