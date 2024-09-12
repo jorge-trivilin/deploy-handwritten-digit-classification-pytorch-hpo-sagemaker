@@ -12,7 +12,7 @@ provider "aws" {
   region = "us-east-1" 
 }
 
-# -- Variáveis --
+# -- Variables --
 
 variable "branch_name" {
   type        = string
@@ -201,7 +201,7 @@ resource "aws_s3_object" "models_folder" {
   content = ""
 }
 
-# Json files to be commited 
+# -- Json files to be commited --
 
 resource "local_file" "image_uri" {
   filename = "${path.module}/image_uri.json"
