@@ -52,5 +52,10 @@ jobs:
           IMAGE_URI=$(jq -r .image_uri infraestrutura/image_uri.json)
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
+      - name: Read Version from Json
+        run: |
+          VERSION=$(jq -r .commit_version infraestrutura/commit_version.json)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Run Training Pipeline
         run: python run_training_pipeline.py

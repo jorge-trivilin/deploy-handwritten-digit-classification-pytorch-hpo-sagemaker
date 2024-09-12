@@ -106,7 +106,7 @@ def get_pipeline(
     script_processor = ScriptProcessor(
         role=role,
         image_uri=image_uri,
-        command=["python3", "entrypoint.py", "preprocessing.py"],
+        command=["python3", "/opt/ml/code/entrypoint.py", "preprocessing.py"],
         instance_count=processing_instance_count,
         instance_type=processing_instance_type,
         sagemaker_session=pipeline_session,
@@ -134,7 +134,7 @@ def get_pipeline(
         instance_type=training_instance_type,
         instance_count=training_instance_count,
         output_path=model_output_s3_path,
-        entry_point="scripts/train.py",
+        command=["python3", "/opt/ml/code/entrypoint.py", "cnn.py"],
         sagemaker_session=pipeline_session,
     )
 
@@ -161,7 +161,7 @@ def get_pipeline(
     script_evaluator = ScriptProcessor(
         role=role,
         image_uri=image_uri,
-        command=["python3", "entrypoint.py", "evaluate.py"],
+        command=["python3", "/opt/ml/code/entrypoint.py", "evaluate.py"],
         instance_count=processing_instance_count,
         instance_type=processing_instance_type,
         sagemaker_session=pipeline_session,

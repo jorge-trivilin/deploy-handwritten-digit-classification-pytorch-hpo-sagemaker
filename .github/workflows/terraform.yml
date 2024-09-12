@@ -108,4 +108,5 @@ jobs:
           add: |
             infraestrutura/s3_uris.json
             infraestrutura/image_uri.json
+            infraestrutura/version.json
           message: 'Update S3 URIs and Image URI'

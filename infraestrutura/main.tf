@@ -203,6 +203,13 @@ resource "aws_s3_object" "models_folder" {
 
 # -- Json files to be commited --
 
+resource "local_file" "version" {
+  filename = "${path.module}/commit_version.json"
+  content = jsonencode({
+    commit_version = var.commit_version
+  })
+}
+
 resource "local_file" "image_uri" {
   filename = "${path.module}/image_uri.json"
   content = jsonencode({
