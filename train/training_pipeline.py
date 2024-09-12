@@ -1,4 +1,4 @@
-# training_pipeline.py
+# -- training_pipeline.py --
 import boto3 # type: ignore
 import os
 import logging
