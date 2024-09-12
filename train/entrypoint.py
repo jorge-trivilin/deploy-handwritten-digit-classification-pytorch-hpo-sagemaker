@@ -3,27 +3,6 @@ import os
 import subprocess
 import torch  # type: ignore
 
-def verify_directories():
-    """
-    Verifica se os diretórios SageMaker esperados estão presentes.
-    """
-    input_dir = "/opt/ml/input"
-    output_dir = "/opt/ml/output"
-    model_dir = "/opt/ml/model"
-
-    missing_dirs = []
-    if not os.path.exists(input_dir):
-        missing_dirs.append(input_dir)
-    if not os.path.exists(output_dir):
-        missing_dirs.append(output_dir)
-    if not os.path.exists(model_dir):
-        missing_dirs.append(model_dir)
-
-    if missing_dirs:
-        print(f"Erro: Diretórios não encontrados: {', '.join(missing_dirs)}")
-        sys.exit(1)
-
-
 def check_gpu_availability():
     """
     Verifica se há uma GPU disponível para uso.
@@ -62,9 +41,6 @@ if __name__ == "__main__":
 
     script_name = sys.argv[1]  # Captura o nome do script passado como argumento
     additional_args = sys.argv[2:]  # Captura os argumentos adicionais
-
-    # Verifica se os diretórios esperados pelo SageMaker estão presentes
-    verify_directories()
 
     # Verifica se há uma GPU disponível
     check_gpu_availability()
