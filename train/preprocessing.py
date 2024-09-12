@@ -1,22 +1,16 @@
-# preprocessing.py
 import os
 from torchvision.datasets import MNIST
 from torchvision import transforms
 import torch
-import boto3
 
 def preprocess_mnist_data():
     try:
-        region = boto3.Session().region_name
-        local_dir = "/opt/ml/processing/input/data"
-        output_dir = "/opt/ml/processing"  # Mudado para corresponder à estrutura do pipeline
+        local_dir = "/opt/ml/processing/input/data"  # Diretório de entrada
+        output_dir = "/opt/ml/processing"  # Diretório de saída
         
-        print(f"Região AWS: {region}")
         print(f"Baixando dataset MNIST para o diretório {local_dir}...")
         
-        MNIST.mirrors = [f"https://sagemaker-example-files-prod-{region}.s3.amazonaws.com/datasets/image/MNIST/"]
-        
-        # Download dos datasets de treinamento e teste separadamente
+        # Download dos datasets de treinamento e teste diretamente do PyTorch
         train_dataset = MNIST(local_dir, train=True, download=True,
                               transform=transforms.Compose([
                                   transforms.ToTensor(),
@@ -29,6 +23,7 @@ def preprocess_mnist_data():
                                  transforms.Normalize((0.1307,), (0.3081,))
                              ]))
         
+        # Cria os diretórios de saída para os dados pré-processados
         os.makedirs(os.path.join(output_dir, 'preprocessed', 'train'), exist_ok=True)
         os.makedirs(os.path.join(output_dir, 'preprocessed', 'test'), exist_ok=True)
         
