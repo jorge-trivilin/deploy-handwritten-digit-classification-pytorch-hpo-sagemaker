@@ -105,6 +105,7 @@ def get_pipeline(
     training_instance_type = ParameterString(
         name="TrainingInstanceType", default_value="ml.m5.xlarge"
     )
+
     processing_instance_count = ParameterInteger(
         name="ProcessingInstanceCount", default_value=1
     )
@@ -230,8 +231,8 @@ def get_pipeline(
             model_approval_status,
             training_instance_count,
             training_instance_type,
-            training_instance_type,
-            processing_instance_type
+            processing_instance_count,
+            processing_instance_type,
 
         ],
         steps=[preprocessing_step, training_step, evaluation_step, register_model_step],
