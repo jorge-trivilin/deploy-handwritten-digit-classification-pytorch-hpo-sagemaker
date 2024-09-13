@@ -184,36 +184,35 @@ def get_pipeline(
     )
 
     evaluation_step = ProcessingStep(
-        name="ModelEvaluation",
-        processor=script_evaluator,
-        inputs=[
-            ProcessingInput(
-                source=training_step.properties.ModelArtifacts.S3ModelArtifacts, # type: ignore
-                destination="/opt/ml/processing/model",  
-            ),
-            ProcessingInput(
-                source=preprocessing_step.properties.ProcessingOutputConfig.Outputs[ # type: ignore
-                    "processed_test_data"
-                ].S3Output.S3Uri,
-                destination="/opt/ml/processing/test", 
-            ),
-        ],
-        outputs=[
-            ProcessingOutput(
-                source="/opt/ml/processing/evaluation",  # Diretório onde o script "evaluate.py" salvará os resultados
-                destination=f"s3://{bucket_output}/{project_name}/evaluation/",
-                output_name="evaluation_output" 
-            )
-        ],
-        code="train/evaluate.py"
+    name="ModelEvaluation",
+    processor=script_evaluator,
+    inputs=[
+        ProcessingInput(
+            source=training_step.properties.ModelArtifacts.S3ModelArtifacts,
+            destination="/opt/ml/processing/model",
+        ),
+        ProcessingInput(
+            source=preprocessing_step.properties.ProcessingOutputConfig.Outputs[
+                "processed_test_data"
+            ].S3Output.S3Uri,
+            destination="/opt/ml/processing/test",
+        ),
+    ],
+    outputs=[
+        ProcessingOutput(
+            source="/opt/ml/processing/evaluation",
+            output_name="evaluation_output",
+        )
+    ],
+    code="train/evaluate.py",
+    arguments=["--evaluation-output-dir", "/opt/ml/processing/evaluation"]
     )
 
-    # Registro do modelo e métricas
     model_metrics = ModelMetrics(
-        model_statistics=MetricsSource(
-            s3_uri=f"s3://{bucket_output}/{project_name}/evaluation/evaluation.json",  # Caminho do JSON com as métricas no S3
-            content_type="application/json",
-        )
+    model_statistics=MetricsSource(
+        s3_uri=evaluation_step.properties.ProcessingOutputConfig.Outputs["evaluation_output"].S3Output.S3Uri,
+        content_type="application/json",
+    )
     )
 
     register_model_step = RegisterModel(

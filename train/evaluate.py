@@ -87,6 +87,8 @@ if __name__ == "__main__":
     parser.add_argument("--test-dir", type=str, default=os.environ.get("SM_CHANNEL_TEST"))
     parser.add_argument("--output-dir", type=str, default=os.environ.get("SM_OUTPUT_DATA_DIR"))
     parser.add_argument("--num-gpus", type=int, default=os.environ.get("SM_NUM_GPUS"))
+    parser.add_argument("--evaluation-output-dir", type=str, default="/opt/ml/processing/evaluation")
+
 
     args = parser.parse_args()
 
@@ -106,7 +108,7 @@ if __name__ == "__main__":
     test_loss, accuracy = evaluate(model, test_loader, device)
 
     # Salvar os resultados no diretório de saída
-    evaluation_output_path = os.path.join(args.output_dir, "evaluation.json")
+    evaluation_output_path = os.path.join(args.evaluation_output_dir, "evaluation.json")
     logger.info(f"Salvando os resultados da avaliação em {evaluation_output_path}")
     with open(evaluation_output_path, "w") as f:
         json.dump({"test_loss": test_loss, "accuracy": accuracy}, f)
