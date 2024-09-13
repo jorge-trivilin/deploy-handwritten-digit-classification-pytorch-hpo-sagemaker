@@ -18,6 +18,7 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 class CustomMNISTDataset(Dataset):
     def __init__(self, data_file):
+        logger.info(f"Carregando dados de {data_file}")
         self.images, self.labels = torch.load(data_file)
     
     def __len__(self):
@@ -182,6 +183,9 @@ def save_model(model, model_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
+    logger.info(f"SM_CHANNEL_TRAIN: {os.environ.get('SM_CHANNEL_TRAIN')}")
+    logger.info(f"SM_CHANNEL_TEST: {os.environ.get('SM_CHANNEL_TEST')}")
+
     # Hyperparameters and other arguments
     parser.add_argument(
         "--batch-size",
@@ -230,12 +234,18 @@ if __name__ == "__main__":
     )
 
     # Container environment
-    parser.add_argument("--hosts", type=list, default=json.loads(os.environ.get("SM_HOSTS", '["localhost"]')))
-    parser.add_argument("--current-host", type=str, default=os.environ.get("SM_CURRENT_HOST", "localhost"))
-    parser.add_argument("--model-dir", type=str, default=os.environ.get("SM_MODEL_DIR", "./model"))
-    parser.add_argument("--train-data-dir", type=str, default=os.environ.get("SM_CHANNEL_TRAIN", "./data/train"))
-    parser.add_argument("--test-data-dir", type=str, default=os.environ.get("SM_CHANNEL_TEST", "./data/test"))
-    parser.add_argument("--num-gpus", type=int, default=os.environ.get("SM_NUM_GPUS", 0))
+    parser.add_argument("--hosts", type=str, default=json.loads(os.environ['SM_HOSTS']))
+    parser.add_argument('--current_host', type=str, default=os.environ['SM_CURRENT_HOST'])
+    parser.add_argument('--model_dir', type=str, default=os.environ['SM_MODEL_DIR'])
+    parser.add_argument("--train_data_dir", type=str, default=os.environ['SM_CHANNEL_TRAINING'])
+    parser.add_argument("--test_data_dir", type=str, default=os.environ['SM_CHANNEL_TESTING'])
+    parser.add_argument("--num_gpus", type=int, default=os.environ.get("SM_NUM_GPUS", 1))
 
     args = parser.parse_args()
+
+     # Adicionando logs para depuração
+    logger.info(f"Argumentos de entrada: {args}")
+    logger.info(f"Arquivos em {args.train_data_dir}: {os.listdir(args.train_data_dir)}")
+    logger.info(f"Arquivos em {args.test_data_dir}: {os.listdir(args.test_data_dir)}")
+
     train(args)
