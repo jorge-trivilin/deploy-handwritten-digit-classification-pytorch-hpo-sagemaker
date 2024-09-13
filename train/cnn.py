@@ -242,10 +242,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--model-dir", type=str, default=os.environ["SM_MODEL_DIR"])
     parser.add_argument(
-        "--train_data_dir", type=str, default=os.environ["SM_CHANNEL_TRAINING"]
+        "--train_data_dir", type=str, default=os.environ["SM_CHANNEL_TRAIN"]
     )
     parser.add_argument(
-        "--test_data_dir", type=str, default=os.environ["SM_CHANNEL_TESTING"]
+        "--test_data_dir", type=str, default=os.environ["SM_CHANNEL_TEST"]
     )
     parser.add_argument("--num-gpus", type=int, default=os.environ["SM_NUM_GPUS"])
 

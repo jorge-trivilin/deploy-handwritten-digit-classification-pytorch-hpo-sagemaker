@@ -13,7 +13,7 @@ COPY requirements.txt /opt/ml/code/
 RUN pip install --no-cache-dir -r /opt/ml/code/requirements.txt
 
 # Copie seu código para o contêiner
-COPY train.py /opt/ml/code/train.py
+COPY cnn.py /opt/ml/code/train.py
 
 # Defina o diretório de trabalho
 WORKDIR /opt/ml/code
