@@ -190,7 +190,9 @@ def get_pipeline(
                 destination="/opt/ml/processing/model",  
             ),
             ProcessingInput(
-                source=preprocessing_step.properties.ProcessingOutputConfig.Outputs["test"].S3Output.S3Uri, # type: ignore
+                source=preprocessing_step.properties.ProcessingOutputConfig.Outputs[ # type: ignore
+                    "processed_test_data"
+                ].S3Output.S3Uri,
                 destination="/opt/ml/processing/test", 
             ),
         ],
