@@ -128,12 +128,12 @@ def get_pipeline(
         processor=script_processor,
         outputs=[
             ProcessingOutput(
-                source="/opt/ml/processing/preprocessed/train",
+                source="/opt/ml/processing/train",
                 destination=preprocessing_output_train_path,
                 output_name="processed_train_data",
             ),
             ProcessingOutput(
-                source="/opt/ml/processing/preprocessed/test",
+                source="/opt/ml/processing/test",
                 destination=preprocessing_output_test_path,
                 output_name="processed_test_data",
             ),
@@ -148,7 +148,7 @@ def get_pipeline(
         instance_type=training_instance_type,
         instance_count=training_instance_count,
         output_path=model_output_s3_path,
-        entry_point="train/cnn.py",
+        container_entry_point=["python", "train.py"],
         sagemaker_session=pipeline_session,
     )
 

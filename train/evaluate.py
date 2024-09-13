@@ -33,29 +33,20 @@ class Net(nn.Module):
         return F.log_softmax(x, dim=1)
 
 # Classe personalizada para carregar os dados pré-processados (.pt)
-class PytorchDataset(Dataset):
-    def __init__(self, data_dir):
-        self.data_dir = data_dir
-        self.data = []
-        self.labels = []
-
-        # Carregar os arquivos .pt
-        for file in os.listdir(data_dir):
-            if file.startswith("img_"):
-                img = torch.load(os.path.join(data_dir, file))
-                label_file = file.replace("img_", "label_")
-                label = torch.load(os.path.join(data_dir, label_file))
-                self.data.append(img)
-                self.labels.append(label)
+class CustomMNISTDataset(Dataset):
+    def __init__(self, data_file):
+        self.images, self.labels = torch.load(data_file)
 
     def __len__(self):
-        return len(self.data)
+        return len(self.labels)
 
     def __getitem__(self, idx):
-        return self.data[idx], self.labels[idx]
+        image = self.images[idx]
+        label = self.labels[idx]
+        return image, label
 
-def _get_test_data_loader(test_dir, batch_size):
-    dataset = PytorchDataset(test_dir)
+def _get_test_data_loader(test_data_file, batch_size):
+    dataset = CustomMNISTDataset(data_file=test_data_file)
     return DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
 # Função de avaliação
@@ -84,7 +75,7 @@ def load_model(model_dir, device):
     logger.info(f"Carregando o modelo do diretório {model_dir}")
     model = Net().to(device)
     model_path = os.path.join(model_dir, "model.pth")
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path, map_location=device))
     return model
 
 if __name__ == "__main__":
@@ -99,14 +90,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    use_cuda = args.num_gpus > 0 and torch.cuda.is_available()
+    use_cuda = int(args.num_gpus) > 0 and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # Carregar o modelo treinado
     model = load_model(args.model_dir, device)
 
+    # Construir o caminho completo para o arquivo test.pt
+    test_data_file = os.path.join(args.test_dir, 'test.pt')
+
     # Carregar os dados de teste
-    test_loader = _get_test_data_loader(args.test_dir, args.batch_size)
+    test_loader = _get_test_data_loader(test_data_file, args.batch_size)
 
     # Avaliar o modelo
     test_loss, accuracy = evaluate(model, test_loader, device)
