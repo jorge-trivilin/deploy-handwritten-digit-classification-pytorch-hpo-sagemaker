@@ -148,10 +148,8 @@ def get_pipeline(
         instance_type=training_instance_type,
         instance_count=training_instance_count,
         output_path=model_output_s3_path,
-        command=["python3"],
         entry_point="train/cnn.py",
         sagemaker_session=pipeline_session,
-        environment={"SAGEMAKER_PROGRAM": "cnn.py"},
     )
 
     training_step = TrainingStep(
