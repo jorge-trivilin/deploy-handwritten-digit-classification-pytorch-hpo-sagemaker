@@ -234,12 +234,20 @@ if __name__ == "__main__":
     )
 
      # Container environment
-    parser.add_argument("--hosts", type=list, default=json.loads(os.environ.get('SM_HOSTS', '["algo-1"]')))
-    parser.add_argument("--current_host", type=str, default=os.environ.get('SM_CURRENT_HOST', 'algo-1'))
-    parser.add_argument("--model_dir", type=str, default=os.environ.get('SM_MODEL_DIR', '/opt/ml/model'))
-    parser.add_argument("--train_data_dir", type=str, default=os.environ.get('SM_CHANNEL_TRAINING', '/opt/ml/input/train'))
-    parser.add_argument("--test_data_dir", type=str, default=os.environ.get('SM_CHANNEL_TESTING', '/opt/ml/input/test'))
-    parser.add_argument("--num_gpus", type=int, default=os.environ.get('SM_NUM_GPUS', 1))
+    parser.add_argument(
+        "--hosts", type=list, default=json.loads(os.environ["SM_HOSTS"])
+    )
+    parser.add_argument(
+        "--current-host", type=str, default=os.environ["SM_CURRENT_HOST"]
+    )
+    parser.add_argument("--model-dir", type=str, default=os.environ["SM_MODEL_DIR"])
+    parser.add_argument(
+        "--train_data_dir", type=str, default=os.environ["SM_CHANNEL_TRAINING"]
+    )
+    parser.add_argument(
+        "--test_data_dir", type=str, default=os.environ["SM_CHANNEL_TESTING"]
+    )
+    parser.add_argument("--num-gpus", type=int, default=os.environ["SM_NUM_GPUS"])
 
     args = parser.parse_args()
 
