@@ -13,6 +13,7 @@ from sagemaker.processing import ProcessingInput, ProcessingOutput # type: ignor
 from sagemaker.inputs import TrainingInput # type: ignore
 from sagemaker.estimator import Estimator # type: ignore
 from sagemaker.workflow.pipeline import Pipeline # type: ignore
+from sagemaker.workflow.steps import CacheConfig
 
 # Configuração de logs
 logging.basicConfig(
@@ -20,6 +21,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+cache_config = CacheConfig(enable_caching=True,
+                           expire_after="PT7H")
 
 def get_environment_variable(name, default_value=""):
     """Obtém ou define uma variável de ambiente."""
@@ -138,7 +141,8 @@ def get_pipeline(
                 output_name="processed_test_data",
             ),
         ],
-        code="train/preprocessing.py"
+        code="train/preprocessing.py",
+        cache_config=cache_config
     )
 
     # Passo de treinamento
