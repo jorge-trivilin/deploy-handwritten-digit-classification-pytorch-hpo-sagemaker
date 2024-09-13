@@ -205,7 +205,7 @@ def get_pipeline(
         )
     ],
     code="train/evaluate.py",
-    arguments=["--evaluation-output-dir", "/opt/ml/processing/evaluation"]
+    job_arguments=["--evaluation-output-dir", "/opt/ml/processing/evaluation"]
     )
 
     model_metrics = ModelMetrics(

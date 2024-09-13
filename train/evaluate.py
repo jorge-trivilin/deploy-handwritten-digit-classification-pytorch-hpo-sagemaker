@@ -86,7 +86,7 @@ if __name__ == "__main__":
     parser.add_argument("--model-dir", type=str, default=os.environ.get("SM_MODEL_DIR"))
     parser.add_argument("--test-dir", type=str, default=os.environ.get("SM_CHANNEL_TEST"))
     parser.add_argument("--output-dir", type=str, default=os.environ.get("SM_OUTPUT_DATA_DIR"))
-    parser.add_argument("--num-gpus", type=int, default=os.environ.get("SM_NUM_GPUS"))
+    parser.add_argument("--num-gpus", type=int, default=os.environ.get("SM_NUM_GPUS", '0'))
     parser.add_argument("--evaluation-output-dir", type=str, default="/opt/ml/processing/evaluation")
 
 
