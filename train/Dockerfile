@@ -15,12 +15,5 @@ RUN pip install --no-cache-dir -r /opt/ml/code/requirements.txt
 # Copie seu código para o contêiner
 COPY train.py /opt/ml/code/train.py
 
-# Defina as variáveis de ambiente para o SageMaker
-ENV SAGEMAKER_PROGRAM train.py
-ENV SAGEMAKER_SUBMIT_DIRECTORY /opt/ml/code
-
 # Defina o diretório de trabalho
 WORKDIR /opt/ml/code
-
-# Defina o comando de entrada para o SageMaker Training Toolkit
-ENTRYPOINT ["python", "-m", "sagemaker_training"]

@@ -152,7 +152,7 @@ def get_pipeline(
         instance_type=training_instance_type,
         instance_count=training_instance_count,
         output_path=model_output_s3_path,
-        container_entry_point=["python", "train.py"],
+        entry_point="train/train.py",
         sagemaker_session=pipeline_session,
     )
 
