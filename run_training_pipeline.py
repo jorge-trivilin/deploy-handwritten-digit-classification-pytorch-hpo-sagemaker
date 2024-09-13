@@ -19,7 +19,7 @@ def main():
     REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
     ROLE = os.getenv("SAGEMAKER_ROLE_ARN", "role_arn")
     BRANCH_NAME = os.getenv("BRANCH_NAME")
-    PROJECT_NAME = os.getenv("PROJECT_NAME", "cnn")
+    PROJECT_NAME = os.getenv("PROJECT_NAME")
     VERSION = os.getenv("VERSION")
     IMAGE_URI = os.getenv("IMAGE_URI")
 

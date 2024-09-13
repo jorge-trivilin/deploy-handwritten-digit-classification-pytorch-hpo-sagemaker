@@ -130,10 +130,12 @@ def get_pipeline(
             ProcessingOutput(
                 source="/opt/ml/processing/preprocessed/train",
                 destination=preprocessing_output_train_path,
+                output_name="processed_train_data",
             ),
             ProcessingOutput(
                 source="/opt/ml/processing/preprocessed/test",
                 destination=preprocessing_output_test_path,
+                output_name="processed_test_data",
             ),
         ],
         code="train/preprocessing.py"
@@ -158,12 +160,12 @@ def get_pipeline(
         inputs={
             "train": TrainingInput(
                 s3_data=preprocessing_step.properties.ProcessingOutputConfig.Outputs[ # type: ignore
-                    "train"
+                    "processed_train_data"
                 ].S3Output.S3Uri
             ),
             "test": TrainingInput(
                 s3_data=preprocessing_step.properties.ProcessingOutputConfig.Outputs[ # type: ignore
-                    "test"
+                    "processed_test_data"
                 ].S3Output.S3Uri
             ),
         },
@@ -195,7 +197,8 @@ def get_pipeline(
         outputs=[
             ProcessingOutput(
                 source="/opt/ml/processing/evaluation",  # Diretório onde o script "evaluate.py" salvará os resultados
-                destination=f"s3://{bucket_output}/{project_name}/evaluation/",  # Caminho de saída para os resultados no S3
+                destination=f"s3://{bucket_output}/{project_name}/evaluation/",
+                output_name="evaluation_output" 
             )
         ],
         code="train/evaluate.py"
