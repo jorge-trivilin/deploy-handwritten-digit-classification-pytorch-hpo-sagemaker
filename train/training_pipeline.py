@@ -256,8 +256,9 @@ def get_pipeline(
 
     best_training_job_name = step_tuning.properties.BestTrainingJob.TrainingJobName
 
-    # Construir o URI completo do modelo
-    model_data_uri = f"{model_output_s3_path}{best_training_job_name}/output/model.tar.gz"
+    model_data_uri = ParameterString(
+        name="ModelDataUri", default_value=f"{model_output_s3_path}{best_training_job_name}/output/model.tar.gz"
+    )
 
     model = Model(
         image_uri=image_uri,
