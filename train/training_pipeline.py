@@ -16,6 +16,7 @@ from sagemaker.workflow.steps import CacheConfig
 from sagemaker.workflow.entities import PipelineVariable # type: ignore
 from sagemaker.workflow.model_step import ModelStep # type: ignore
 from sagemaker.model import Model # type: ignore
+from sagemaker.workflow.functions import Join # type: ignore
 
 from sagemaker.processing import ScriptProcessor  # type: ignore
 from sagemaker.processing import ProcessingInput, ProcessingOutput  # type: ignore
@@ -262,7 +263,7 @@ def get_pipeline(
 
     model = Model(
         image_uri=image_uri,
-        model_data=model_data_uri,
+        model_data=Join(on="", values=[model_data_uri]),
         sagemaker_session=pipeline_session,
         role=role,
         # entry_point="inference.py",  # Se aplicável
