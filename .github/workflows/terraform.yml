@@ -9,7 +9,7 @@ jobs:
   terraform:
     if: contains(github.event.head_commit.message, '-terraform')
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'development' && 'development' || 'staging' }}
+    environment: development
 
     env:  # Defining environment variables
       TF_VAR_aws_default_region: ${{ secrets.AWS_DEFAULT_REGION }}
