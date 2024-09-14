@@ -39,7 +39,7 @@ jobs:
           echo "AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" >> $GITHUB_ENV
           echo "SAGEMAKER_ROLE_ARN=${{ secrets.SAGEMAKER_ROLE_ARN }}" >> $GITHUB_ENV
           echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
-          echo "PROJECT_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "PROJECT_NAME=${{ secrets.PROJECT_NAME }}" >> $GITHUB_ENV
           echo "BUCKET_RAW=${{ secrets.BUCKET_RAW }}" >> $GITHUB_ENV
           echo "BUCKET_PROCESSED=${{ secrets.BUCKET_PROCESSED }}" >> $GITHUB_ENV
           echo "BUCKET_STAGING=${{ secrets.BUCKET_STAGING }}" >> $GITHUB_ENV

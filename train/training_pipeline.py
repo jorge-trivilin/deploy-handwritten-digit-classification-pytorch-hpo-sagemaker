@@ -14,6 +14,8 @@ from sagemaker.workflow.parameters import ParameterString, ParameterInteger  # t
 from sagemaker.workflow.pipeline import Pipeline  # type: ignore
 from sagemaker.workflow.steps import CacheConfig
 from sagemaker.workflow.entities import PipelineVariable # type: ignore
+from sagemaker.workflow.model_step import ModelStep # type: ignore
+from sagemaker.model import Model # type: ignore
 
 from sagemaker.processing import ScriptProcessor  # type: ignore
 from sagemaker.processing import ProcessingInput, ProcessingOutput  # type: ignore
@@ -186,7 +188,7 @@ def get_pipeline(
         instance_count=training_instance_count,
         output_path=model_output_s3_path,
         entry_point="train/train.py",
-        sagemaker_session=pipeline_session,
+        sagemaker_session=pipeline_session
     )
 
     hyperparameter_ranges = {
@@ -252,6 +254,29 @@ def get_pipeline(
     )
     """
 
+    # Obtendo o URI do melhor modelo
+    model_data_uri = step_tuning.get_top_model_s3_uri(
+        top_k=0,
+        s3_bucket=bucket_models,
+        prefix='best_model'
+    )
+
+    model = Model(
+        image_uri=image_uri,
+        model_data=model_data_uri,
+        sagemaker_session=pipeline_session,
+        role=role,
+        # entry_point="inference.py",  # Se aplicável
+        # source_dir="src",            # Se aplicável
+    )
+
+    step_model = ModelStep(
+        name="CreateBestModel",
+        step_args=model.create(
+            instance_type="ml.m5.xlarge",
+        ),
+    )
+
     # Passo de avaliação do modelo
     script_evaluator = ScriptProcessor(
         role=role,
@@ -262,13 +287,12 @@ def get_pipeline(
         sagemaker_session=pipeline_session,
     )
 
-
     evaluation_step = ProcessingStep(
         name="ModelEvaluation",
         processor=script_evaluator,
         inputs=[
             ProcessingInput(
-                source=step_tuning.get_top_model_s3_uri(top_k=0, s3_bucket=bucket_models, prefix='best_model'),
+                source=step_model.properties.ModelArtifacts.S3ModelArtifacts,
                 destination="/opt/ml/processing/model",
             ),
             ProcessingInput(
@@ -289,9 +313,6 @@ def get_pipeline(
         job_arguments=["--evaluation-output-dir", "/opt/ml/processing/evaluation"],
     )
 
-    logger.info("step_tuning.get_top_model_s3_uri(top_k=0, s3_bucket=bucket_models, prefix='best_model'")
-
-
     model_metrics = ModelMetrics(
         model_statistics=MetricsSource(
             s3_uri=evaluation_step.properties.ProcessingOutputConfig.Outputs[
@@ -301,10 +322,7 @@ def get_pipeline(
         )
     )
 
-    register_model_step = RegisterModel(
-        name="RegisterModelStep",
-        estimator=pytorch_estimator,
-        model_data=step_tuning.get_top_model_s3_uri(top_k=0, s3_bucket=bucket_models, prefix='best_model'),
+    register_model_step_args = model.register(
         content_types=["application/json"],
         response_types=["application/json"],
         inference_instances=["ml.t2.medium", "ml.m5.xlarge"],
@@ -314,9 +332,17 @@ def get_pipeline(
         model_metrics=model_metrics,
     )
 
+
+    
+    register_model_step = ModelStep(
+        name="RegisterBestModel",
+        step_args=register_model_step_args,
+    )
+
     # Definir as dependências
     step_tuning.depends_on = [preprocessing_step]
-    evaluation_step.depends_on = [step_tuning]
+    step_model.depends_on = [step_tuning]
+    evaluation_step.depends_on = [step_model]
     register_model_step.depends_on = [evaluation_step]
 
     # Definindo o pipeline
@@ -329,7 +355,7 @@ def get_pipeline(
             processing_instance_count,
             processing_instance_type,
         ],
-        steps=[preprocessing_step, step_tuning, evaluation_step, register_model_step],
+        steps=[preprocessing_step, step_tuning, step_model, evaluation_step, register_model_step],
         sagemaker_session=pipeline_session,
     )
 
