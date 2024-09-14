@@ -257,13 +257,16 @@ def get_pipeline(
 
     best_training_job_name = step_tuning.properties.BestTrainingJob.TrainingJobName
 
-    model_data_uri = ParameterString(
-        name="ModelDataUri", default_value=f"{model_output_s3_path}{best_training_job_name}/output/model.tar.gz"
-    )
+    # Construir o URI completo do modelo usando Join
+    model_data_uri = Join(on="", values=[
+        model_output_s3_path,
+        best_training_job_name,
+        "/output/model.tar.gz"
+    ])
 
     model = Model(
         image_uri=image_uri,
-        model_data=Join(on="", values=[model_data_uri]),
+        model_data=model_data_uri,
         sagemaker_session=pipeline_session,
         role=role,
         # entry_point="inference.py",  # Se aplicável
