@@ -16,18 +16,20 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
+
 class CustomMNISTDataset(Dataset):
     def __init__(self, data_file):
         logger.info(f"Carregando dados de {data_file}")
         self.images, self.labels = torch.load(data_file)
-    
+
     def __len__(self):
         return len(self.labels)
-    
+
     def __getitem__(self, idx):
         image = self.images[idx]
         label = self.labels[idx]
         return image, label
+
 
 # Modelo baseado em https://github.com/pytorch/examples/blob/master/mnist/main.py
 class Net(nn.Module):
@@ -48,6 +50,7 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
 
+
 def _get_train_data_loader(batch_size, data_file, is_distributed, **kwargs):
     logger.info("Get train data loader")
     dataset = CustomMNISTDataset(data_file=data_file)
@@ -61,18 +64,17 @@ def _get_train_data_loader(batch_size, data_file, is_distributed, **kwargs):
         batch_size=batch_size,
         shuffle=(train_sampler is None),
         sampler=train_sampler,
-        **kwargs
+        **kwargs,
     )
+
 
 def _get_test_data_loader(test_batch_size, data_file, **kwargs):
     logger.info("Get test data loader")
     dataset = CustomMNISTDataset(data_file=data_file)
     return torch.utils.data.DataLoader(
-        dataset,
-        batch_size=test_batch_size,
-        shuffle=True,
-        **kwargs
+        dataset, batch_size=test_batch_size, shuffle=True, **kwargs
     )
+
 
 def _average_gradients(model):
     # Gradient averaging.
@@ -80,6 +82,7 @@ def _average_gradients(model):
     for param in model.parameters():
         dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM)
         param.grad.data /= size
+
 
 def train(args):
     is_distributed = len(args.hosts) > 1 and args.backend is not None
@@ -108,15 +111,13 @@ def train(args):
         torch.cuda.manual_seed(args.seed)
 
     # Ajuste nos caminhos dos arquivos de dados
-    train_data_file = os.path.join(args.train_data_dir, 'train.pt')
-    test_data_file = os.path.join(args.test_data_dir, 'test.pt')
+    train_data_file = os.path.join(args.train_data_dir, "train.pt")
+    test_data_file = os.path.join(args.test_data_dir, "test.pt")
 
     train_loader = _get_train_data_loader(
         args.batch_size, train_data_file, is_distributed, **kwargs
     )
-    test_loader = _get_test_data_loader(
-        args.test_batch_size, test_data_file, **kwargs
-    )
+    test_loader = _get_test_data_loader(args.test_batch_size, test_data_file, **kwargs)
 
     model = Net().to(device)
     if is_distributed and use_cuda:
@@ -150,6 +151,7 @@ def train(args):
         test(model, test_loader, device)
     save_model(model, args.model_dir)
 
+
 def test(model, test_loader, device):
     model.eval()
     test_loss = 0
@@ -158,8 +160,12 @@ def test(model, test_loader, device):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item()  # Sum up batch loss
-            pred = output.argmax(dim=1, keepdim=True)  # Get the index of the max log-probability
+            test_loss += F.nll_loss(
+                output, target, reduction="sum"
+            ).item()  # Sum up batch loss
+            pred = output.argmax(
+                dim=1, keepdim=True
+            )  # Get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
@@ -168,6 +174,7 @@ def test(model, test_loader, device):
         f"({100. * correct / len(test_loader.dataset):.0f}%)\n"
     )
 
+
 def model_fn(model_dir):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = Net()
@@ -175,10 +182,12 @@ def model_fn(model_dir):
         model.load_state_dict(torch.load(f, map_location=device))
     return model.to(device)
 
+
 def save_model(model, model_dir):
     logger.info("Saving the model.")
     path = os.path.join(model_dir, "model.pth")
     torch.save(model.state_dict(), path)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -217,9 +226,7 @@ if __name__ == "__main__":
         default=0.5,
         help="SGD momentum (default: 0.5)",
     )
-    parser.add_argument(
-        "--seed", type=int, default=1, help="random seed (default: 1)"
-    )
+    parser.add_argument("--seed", type=int, default=1, help="random seed (default: 1)")
     parser.add_argument(
         "--log-interval",
         type=int,
@@ -233,7 +240,7 @@ if __name__ == "__main__":
         help="backend for distributed training (tcp, gloo on cpu and gloo, nccl on gpu)",
     )
 
-     # Container environment
+    # Container environment
     parser.add_argument(
         "--hosts", type=list, default=json.loads(os.environ["SM_HOSTS"])
     )
@@ -251,7 +258,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-     # Adicionando logs para depuração
+    # Adicionando logs para depuração
     logger.info(f"Argumentos de entrada: {args}")
     logger.info(f"Arquivos em {args.train_data_dir}: {os.listdir(args.train_data_dir)}")
     logger.info(f"Arquivos em {args.test_data_dir}: {os.listdir(args.test_data_dir)}")

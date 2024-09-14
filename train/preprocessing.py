@@ -3,6 +3,7 @@ from torchvision.datasets import MNIST
 from torchvision import transforms
 import torch
 
+
 def preprocess_mnist_data():
     try:
         local_dir = "/opt/ml/processing/input/data"  # Diretório de entrada
@@ -11,21 +12,27 @@ def preprocess_mnist_data():
         print(f"Baixando dataset MNIST para o diretório {local_dir}...")
 
         # Download dos datasets de treinamento e teste diretamente do PyTorch
-        train_dataset = MNIST(local_dir, train=True, download=True,
-                              transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                                  transforms.Normalize((0.1307,), (0.3081,))
-                              ]))
+        train_dataset = MNIST(
+            local_dir,
+            train=True,
+            download=True,
+            transform=transforms.Compose(
+                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+            ),
+        )
 
-        test_dataset = MNIST(local_dir, train=False, download=True,
-                             transform=transforms.Compose([
-                                 transforms.ToTensor(),
-                                 transforms.Normalize((0.1307,), (0.3081,))
-                             ]))
+        test_dataset = MNIST(
+            local_dir,
+            train=False,
+            download=True,
+            transform=transforms.Compose(
+                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+            ),
+        )
 
         # Diretórios de saída para os dados pré-processados
-        train_output_dir = os.path.join(output_dir, 'train')
-        test_output_dir = os.path.join(output_dir, 'test')
+        train_output_dir = os.path.join(output_dir, "train")
+        test_output_dir = os.path.join(output_dir, "test")
         os.makedirs(train_output_dir, exist_ok=True)
         os.makedirs(test_output_dir, exist_ok=True)
 
@@ -44,7 +51,9 @@ def preprocess_mnist_data():
         train_labels = torch.tensor(train_labels)
 
         # Salva os dados em um único arquivo
-        torch.save((train_images, train_labels), os.path.join(train_output_dir, 'train.pt'))
+        torch.save(
+            (train_images, train_labels), os.path.join(train_output_dir, "train.pt")
+        )
 
         print("Processando e salvando o dataset de teste...")
         # Carrega todas as imagens e labels de teste
@@ -61,13 +70,16 @@ def preprocess_mnist_data():
         test_labels = torch.tensor(test_labels)
 
         # Salva os dados em um único arquivo
-        torch.save((test_images, test_labels), os.path.join(test_output_dir, 'test.pt'))
+        torch.save((test_images, test_labels), os.path.join(test_output_dir, "test.pt"))
 
-        print(f"Dados MNIST pré-processados e salvos nos diretórios {train_output_dir} e {test_output_dir}")
+        print(
+            f"Dados MNIST pré-processados e salvos nos diretórios {train_output_dir} e {test_output_dir}"
+        )
 
     except Exception as e:
         print(f"Ocorreu um erro durante o pré-processamento: {str(e)}")
         raise
+
 
 if __name__ == "__main__":
     preprocess_mnist_data()

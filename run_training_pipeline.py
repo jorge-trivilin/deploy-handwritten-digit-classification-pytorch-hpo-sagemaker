@@ -1,7 +1,7 @@
 # run_training_pipeline.py
 import os
 import logging
-from train.training_pipeline import get_pipeline # type: ignore
+from train.training_pipeline import get_pipeline  # type: ignore
 import boto3
 
 logging.basicConfig(
@@ -46,14 +46,13 @@ def main():
         bucket_models=BUCKET_MODELS,
         bucket_output=BUCKET_OUTPUT,
         bucket_pipeline=BUCKET_PIPELINE,
-        version=VERSION
+        version=VERSION,
     )
 
     # Inserir o pipeline (criar ou atualizar) e iniciar sua execução
     pipeline.upsert(role_arn=ROLE)
     execution = pipeline.start()
     print(f"Pipeline {pipeline_name} iniciado com execução {execution}")
-
 
     # Captura o resultado da execução e faz algo com ele (logar, enviar notificação, etc.)
     try:

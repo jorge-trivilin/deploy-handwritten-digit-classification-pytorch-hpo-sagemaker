@@ -1,18 +1,18 @@
 # -- training_pipeline.py --
-import boto3 # type: ignore
+import boto3  # type: ignore
 import os
 import logging
-from sagemaker.session import Session # type: ignore
-from sagemaker.model_metrics import MetricsSource, ModelMetrics # type: ignore
-from sagemaker.workflow.step_collections import RegisterModel # type: ignore
-from sagemaker.workflow.pipeline_context import PipelineSession# type: ignore 
-from sagemaker.processing import ScriptProcessor # type: ignore
-from sagemaker.workflow.steps import ProcessingStep, TrainingStep # type: ignore
-from sagemaker.workflow.parameters import ParameterString, ParameterInteger # type: ignore
-from sagemaker.processing import ProcessingInput, ProcessingOutput # type: ignore
-from sagemaker.inputs import TrainingInput # type: ignore
-from sagemaker.estimator import Estimator # type: ignore
-from sagemaker.workflow.pipeline import Pipeline # type: ignore
+from sagemaker.session import Session  # type: ignore
+from sagemaker.model_metrics import MetricsSource, ModelMetrics  # type: ignore
+from sagemaker.workflow.step_collections import RegisterModel  # type: ignore
+from sagemaker.workflow.pipeline_context import PipelineSession  # type: ignore
+from sagemaker.processing import ScriptProcessor  # type: ignore
+from sagemaker.workflow.steps import ProcessingStep, TrainingStep  # type: ignore
+from sagemaker.workflow.parameters import ParameterString, ParameterInteger  # type: ignore
+from sagemaker.processing import ProcessingInput, ProcessingOutput  # type: ignore
+from sagemaker.inputs import TrainingInput  # type: ignore
+from sagemaker.estimator import Estimator  # type: ignore
+from sagemaker.workflow.pipeline import Pipeline  # type: ignore
 from sagemaker.workflow.steps import CacheConfig
 
 # Configuração de logs
@@ -21,8 +21,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-cache_config = CacheConfig(enable_caching=True,
-                           expire_after="PT7H")
+cache_config = CacheConfig(enable_caching=True, expire_after="PT7H")
+
 
 def get_environment_variable(name, default_value=""):
     """Obtém ou define uma variável de ambiente."""
@@ -50,6 +50,7 @@ def get_session(region=None, bucket_pipeline=None):
         default_bucket=bucket_pipeline,
     )
 
+
 def get_pipeline(
     region,
     role,
@@ -62,7 +63,7 @@ def get_pipeline(
     bucket_models,
     bucket_output,
     bucket_pipeline,
-    version
+    version,
 ):
     """Cria e configura o pipeline do SageMaker."""
 
@@ -73,7 +74,7 @@ def get_pipeline(
         branch_name,
         version,
         "Pytorch",
-        "preprocessing/train/"
+        "preprocessing/train/",
     )
 
     preprocessing_output_test_path = create_s3_path(
@@ -82,9 +83,9 @@ def get_pipeline(
         branch_name,
         version,
         "Pytorch",
-        "preprocessing/test/"
+        "preprocessing/test/",
     )
-    
+
     model_output_s3_path = create_s3_path(
         bucket_models, project_name, branch_name, version, "Pytorch", ""
     )
@@ -142,7 +143,7 @@ def get_pipeline(
             ),
         ],
         code="train/preprocessing.py",
-        cache_config=cache_config
+        cache_config=cache_config,
     )
 
     # Passo de treinamento
@@ -161,12 +162,12 @@ def get_pipeline(
         estimator=pytorch_estimator,
         inputs={
             "train": TrainingInput(
-                s3_data=preprocessing_step.properties.ProcessingOutputConfig.Outputs[ # type: ignore
+                s3_data=preprocessing_step.properties.ProcessingOutputConfig.Outputs[  # type: ignore
                     "processed_train_data"
                 ].S3Output.S3Uri
             ),
             "test": TrainingInput(
-                s3_data=preprocessing_step.properties.ProcessingOutputConfig.Outputs[ # type: ignore
+                s3_data=preprocessing_step.properties.ProcessingOutputConfig.Outputs[  # type: ignore
                     "processed_test_data"
                 ].S3Output.S3Uri
             ),
@@ -184,41 +185,43 @@ def get_pipeline(
     )
 
     evaluation_step = ProcessingStep(
-    name="ModelEvaluation",
-    processor=script_evaluator,
-    inputs=[
-        ProcessingInput(
-            source=training_step.properties.ModelArtifacts.S3ModelArtifacts,
-            destination="/opt/ml/processing/model",
-        ),
-        ProcessingInput(
-            source=preprocessing_step.properties.ProcessingOutputConfig.Outputs[
-                "processed_test_data"
-            ].S3Output.S3Uri,
-            destination="/opt/ml/processing/test",
-        ),
-    ],
-    outputs=[
-        ProcessingOutput(
-            source="/opt/ml/processing/evaluation",
-            output_name="evaluation_output",
-        )
-    ],
-    code="train/evaluate.py",
-    job_arguments=["--evaluation-output-dir", "/opt/ml/processing/evaluation"]
+        name="ModelEvaluation",
+        processor=script_evaluator,
+        inputs=[
+            ProcessingInput(
+                source=training_step.properties.ModelArtifacts.S3ModelArtifacts,
+                destination="/opt/ml/processing/model",
+            ),
+            ProcessingInput(
+                source=preprocessing_step.properties.ProcessingOutputConfig.Outputs[
+                    "processed_test_data"
+                ].S3Output.S3Uri,
+                destination="/opt/ml/processing/test",
+            ),
+        ],
+        outputs=[
+            ProcessingOutput(
+                source="/opt/ml/processing/evaluation",
+                output_name="evaluation_output",
+            )
+        ],
+        code="train/evaluate.py",
+        job_arguments=["--evaluation-output-dir", "/opt/ml/processing/evaluation"],
     )
 
     model_metrics = ModelMetrics(
-    model_statistics=MetricsSource(
-        s3_uri=evaluation_step.properties.ProcessingOutputConfig.Outputs["evaluation_output"].S3Output.S3Uri,
-        content_type="application/json",
-    )
+        model_statistics=MetricsSource(
+            s3_uri=evaluation_step.properties.ProcessingOutputConfig.Outputs[
+                "evaluation_output"
+            ].S3Output.S3Uri,
+            content_type="application/json",
+        )
     )
 
     register_model_step = RegisterModel(
         name="RegisterModelStep",
         estimator=pytorch_estimator,
-        model_data=training_step.properties.ModelArtifacts.S3ModelArtifacts, # type: ignore
+        model_data=training_step.properties.ModelArtifacts.S3ModelArtifacts,  # type: ignore
         content_types=["application/json"],
         response_types=["application/json"],
         inference_instances=["ml.t2.medium", "ml.m5.xlarge"],
@@ -228,7 +231,7 @@ def get_pipeline(
         model_metrics=model_metrics,
     )
 
-    # Step dependencies 
+    # Step dependencies
     training_step.depends_on = [preprocessing_step]
     evaluation_step.depends_on = [training_step]
     register_model_step.depends_on = [evaluation_step]
@@ -242,7 +245,6 @@ def get_pipeline(
             training_instance_type,
             processing_instance_count,
             processing_instance_type,
-
         ],
         steps=[preprocessing_step, training_step, evaluation_step, register_model_step],
         sagemaker_session=pipeline_session,

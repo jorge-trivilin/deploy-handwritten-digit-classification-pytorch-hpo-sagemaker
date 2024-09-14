@@ -5,14 +5,14 @@ import os
 import sys
 
 
-import torch # type: ignore
-import torch.distributed as dist # type: ignore
-import torch.nn as nn # type: ignore
-import torch.nn.functional as F # type: ignore
-import torch.optim as optim # type: ignore
-import torch.utils.data # type: ignore
-import torch.utils.data.distributed # type: ignore
-from torchvision import datasets, transforms # type: ignore
+import torch  # type: ignore
+import torch.distributed as dist  # type: ignore
+import torch.nn as nn  # type: ignore
+import torch.nn.functional as F  # type: ignore
+import torch.optim as optim  # type: ignore
+import torch.utils.data  # type: ignore
+import torch.utils.data.distributed  # type: ignore
+from torchvision import datasets, transforms  # type: ignore
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -278,9 +278,7 @@ if __name__ == "__main__":
         "--current-host", type=str, default=os.environ["SM_CURRENT_HOST"]
     )
     parser.add_argument("--model-dir", type=str, default=os.environ["SM_MODEL_DIR"])
-    parser.add_argument(
-        "--data-dir", type=str, default=os.environ["SM_CHANNEL_TRAIN"]
-    )
+    parser.add_argument("--data-dir", type=str, default=os.environ["SM_CHANNEL_TRAIN"])
     parser.add_argument("--num-gpus", type=int, default=os.environ["SM_NUM_GPUS"])
 
     train(parser.parse_args())

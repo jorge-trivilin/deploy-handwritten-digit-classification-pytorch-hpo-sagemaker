@@ -3,6 +3,7 @@ import os
 import subprocess
 import torch  # type: ignore
 
+
 def check_gpu_availability():
     """
     Verifica se há uma GPU disponível para uso.
@@ -24,10 +25,14 @@ def run_script(script_name, additional_args):
         sys.exit(1)
 
     print(f"Executando o script: {script_name}")
-    result = subprocess.run(["python3", script_path] + additional_args, capture_output=True, text=True)
+    result = subprocess.run(
+        ["python3", script_path] + additional_args, capture_output=True, text=True
+    )
 
     if result.returncode != 0:
-        print(f"Erro ao executar o script {script_name}. Código de saída: {result.returncode}")
+        print(
+            f"Erro ao executar o script {script_name}. Código de saída: {result.returncode}"
+        )
         print(f"Saída do erro: {result.stderr}")
         sys.exit(result.returncode)
 
