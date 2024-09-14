@@ -258,7 +258,7 @@ def get_pipeline(
     best_training_job_name = step_tuning.properties.BestTrainingJob.TrainingJobName
 
     # Construir o URI completo do modelo usando Join
-    model_data_uri = Join(on="", values=[
+    model_data_uri_path = Join(on="", values=[
         model_output_s3_path,
         best_training_job_name,
         "/output/model.tar.gz"
@@ -266,19 +266,21 @@ def get_pipeline(
 
     model = Model(
         image_uri=image_uri,
-        model_data=model_data_uri,
+        model_data=model_data_uri_path,
         sagemaker_session=pipeline_session,
         role=role,
         # entry_point="inference.py",  # Se aplicável
         # source_dir="src",            # Se aplicável
     )
-
+    
+    """
     step_model = ModelStep(
         name="CreateBestModel",
         step_args=model.create(
             instance_type="ml.m5.xlarge",
         ),
     )
+    """
 
     # Passo de avaliação do modelo
     script_evaluator = ScriptProcessor(
@@ -318,9 +320,15 @@ def get_pipeline(
 
     model_metrics = ModelMetrics(
         model_statistics=MetricsSource(
-            s3_uri=evaluation_step.properties.ProcessingOutputConfig.Outputs[
-                "evaluation_output"
-            ].S3Output.S3Uri,
+            s3_uri=Join(
+                on="/",
+                values=[
+                    evaluation_step.properties.ProcessingOutputConfig.Outputs[
+                        "evaluation_output"
+                    ].S3Output.S3Uri,
+                    "evaluation.json"
+                ]
+            ),
             content_type="application/json",
         )
     )
@@ -334,8 +342,6 @@ def get_pipeline(
         approval_status=model_approval_status,
         model_metrics=model_metrics,
     )
-
-
     
     register_model_step = ModelStep(
         name="RegisterBestModel",
@@ -344,8 +350,7 @@ def get_pipeline(
 
     # Definir as dependências
     step_tuning.depends_on = [preprocessing_step]
-    step_model.depends_on = [step_tuning]
-    evaluation_step.depends_on = [step_model]
+    evaluation_step.depends_on = [step_tuning]
     register_model_step.depends_on = [evaluation_step]
 
     # Definindo o pipeline
@@ -358,7 +363,7 @@ def get_pipeline(
             processing_instance_count,
             processing_instance_type,
         ],
-        steps=[preprocessing_step, step_tuning, step_model, evaluation_step, register_model_step],
+        steps=[preprocessing_step, step_tuning, evaluation_step, register_model_step],
         sagemaker_session=pipeline_session,
     )
 
