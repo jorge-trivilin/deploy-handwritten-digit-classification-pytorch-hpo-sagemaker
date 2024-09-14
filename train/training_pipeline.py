@@ -108,6 +108,20 @@ def get_pipeline(
         bucket_output, project_name, branch_name, version, "Pytorch", "evaluation"
     )
 
+    # Logger
+    logger.info("Training preprocessed data will be saved in: %s",
+                preprocessing_output_train_path
+                )
+    logger.info("Test preprocessed data will be saved in: %s",
+            preprocessing_output_test_path
+            )
+    logger.info("Model will be saved in: %s",
+            model_output_s3_path
+            )
+    logger.info("Evaluation metrics will be saved in: %s",
+            evaluation_metrics_output_path
+            )
+
     # Criação da sessão do SageMaker
     sagemaker_session = get_session(region, bucket_pipeline)
 
@@ -252,7 +266,7 @@ def get_pipeline(
         processor=script_evaluator,
         inputs=[
             ProcessingInput(
-                source=step_tuning.get_top_model_s3_uri(top_k=0, s3_bucket=bucket_models),
+                source=step_tuning.properties.BestTrainingJob.ModelArtifacts.S3ModelArtifacts,
                 destination="/opt/ml/processing/model",
             ),
             ProcessingInput(
@@ -273,6 +287,9 @@ def get_pipeline(
         job_arguments=["--evaluation-output-dir", "/opt/ml/processing/evaluation"],
     )
 
+    logger.info("Best model S3 URI:", step_tuning.properties.BestTrainingJob.ModelArtifacts.S3ModelArtifacts)
+
+
     model_metrics = ModelMetrics(
         model_statistics=MetricsSource(
             s3_uri=evaluation_step.properties.ProcessingOutputConfig.Outputs[
@@ -285,8 +302,7 @@ def get_pipeline(
     register_model_step = RegisterModel(
         name="RegisterModelStep",
         estimator=pytorch_estimator,
-        model_data=step_tuning.get_top_model_s3_uri(top_k=0, s3_bucket=bucket_models),
-        content_types=["application/json"],
+        model_data=step_tuning.properties.BestTrainingJob.ModelArtifacts.S3ModelArtifacts,        content_types=["application/json"],
         response_types=["application/json"],
         inference_instances=["ml.t2.medium", "ml.m5.xlarge"],
         transform_instances=["ml.m5.xlarge"],
