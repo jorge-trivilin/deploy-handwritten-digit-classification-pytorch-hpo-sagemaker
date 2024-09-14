@@ -262,21 +262,13 @@ def get_pipeline(
         sagemaker_session=pipeline_session,
     )
 
-    bucket_models = 'iamdscli-models-personal'
-    model_prefix = 'best-model'
-    model_s3_uri = step_tuning.get_top_model_s3_uri(
-    top_k=0,
-    s3_bucket=bucket_models,
-    prefix=model_prefix
-)
-    print("Model S3 URI:", model_s3_uri)
 
     evaluation_step = ProcessingStep(
         name="ModelEvaluation",
         processor=script_evaluator,
         inputs=[
             ProcessingInput(
-                source=model_s3_uri,
+                source=step_tuning.get_top_model_s3_uri(top_k=0, s3_bucket=bucket_models, prefix='best_model'),
                 destination="/opt/ml/processing/model",
             ),
             ProcessingInput(
@@ -297,7 +289,7 @@ def get_pipeline(
         job_arguments=["--evaluation-output-dir", "/opt/ml/processing/evaluation"],
     )
 
-    logger.info("Best model S3 URI:", step_tuning.properties.BestTrainingJob.ModelArtifacts.S3ModelArtifacts)
+    logger.info("step_tuning.get_top_model_s3_uri(top_k=0, s3_bucket=bucket_models, prefix='best_model'")
 
 
     model_metrics = ModelMetrics(
@@ -312,7 +304,7 @@ def get_pipeline(
     register_model_step = RegisterModel(
         name="RegisterModelStep",
         estimator=pytorch_estimator,
-        model_data=model_s3_uri,
+        model_data=step_tuning.get_top_model_s3_uri(top_k=0, s3_bucket=bucket_models, prefix='best_model'),
         content_types=["application/json"],
         response_types=["application/json"],
         inference_instances=["ml.t2.medium", "ml.m5.xlarge"],
