@@ -7,6 +7,7 @@ import logging
 import sys
 from torch.utils.data import DataLoader, Dataset
 import json
+import tarfile  # Import necessário para manipular arquivos tar
 
 # Configuração do logger
 logger = logging.getLogger(__name__)
@@ -17,7 +18,6 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        # Definição das camadas
         self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
         self.conv2_drop = nn.Dropout2d()
@@ -25,7 +25,6 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(50, 10)
 
     def forward(self, x):
-        # Definição da passagem para frente
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
         x = x.view(-1, 320)
@@ -54,12 +53,26 @@ def _get_test_data_loader(test_data_file, batch_size):
 # Função para carregar o modelo treinado
 def load_model(model_dir, device):
     logger.info(f"Carregando o modelo do diretório {model_dir}")
-    model = Net().to(device)
+
+    # Verificar se model.tar.gz existe e extrair
+    model_tar_path = os.path.join(model_dir, "model.tar.gz")
+    if os.path.exists(model_tar_path):
+        logger.info(f"Encontrado model.tar.gz em {model_tar_path}, extraindo...")
+        with tarfile.open(model_tar_path, "r:gz") as tar:
+            tar.extractall(path=model_dir)
+    else:
+        logger.error(f"model.tar.gz não encontrado em {model_tar_path}")
+
+    # Agora, carregar o modelo a partir do arquivo model.pth
     model_path = os.path.join(model_dir, "model.pth")
+    if not os.path.exists(model_path):
+        logger.error(f"Arquivo de modelo {model_path} não encontrado após extração.")
+        raise FileNotFoundError(f"Arquivo de modelo {model_path} não encontrado.")
+
+    model = Net().to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     return model
 
-# Função de avaliação
 def evaluate(model, test_loader, device):
     model.eval()
     test_loss = 0
