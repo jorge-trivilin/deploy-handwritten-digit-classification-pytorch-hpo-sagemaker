@@ -292,7 +292,7 @@ def get_pipeline(
         processor=script_evaluator,
         inputs=[
             ProcessingInput(
-                source=step_model.properties.ModelArtifacts.S3ModelArtifacts,
+                source=model_data_uri,
                 destination="/opt/ml/processing/model",
             ),
             ProcessingInput(
