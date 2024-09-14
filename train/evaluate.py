@@ -70,7 +70,22 @@ def load_model(model_dir, device):
         raise FileNotFoundError(f"Arquivo de modelo {model_path} não encontrado.")
 
     model = Net().to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
+
+    # Carregar o state_dict
+    state_dict = torch.load(model_path, map_location=device, weights_only=True)
+
+    # Remover o prefixo 'module.' das chaves, se necessário
+    from collections import OrderedDict
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        if k.startswith('module.'):
+            new_key = k[7:]  # Remover 'module.' do início da chave
+        else:
+            new_key = k
+        new_state_dict[new_key] = v
+
+    # Carregar o novo state_dict no modelo
+    model.load_state_dict(new_state_dict)
     return model
 
 def evaluate(model, test_loader, device):
