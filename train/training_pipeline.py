@@ -312,7 +312,8 @@ def get_pipeline(
     register_model_step = RegisterModel(
         name="RegisterModelStep",
         estimator=pytorch_estimator,
-        model_data=step_tuning.properties.BestTrainingJob.ModelArtifacts.S3ModelArtifacts,        content_types=["application/json"],
+        model_data=model_s3_uri,
+        content_types=["application/json"],
         response_types=["application/json"],
         inference_instances=["ml.t2.medium", "ml.m5.xlarge"],
         transform_instances=["ml.m5.xlarge"],
