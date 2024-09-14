@@ -297,7 +297,7 @@ def get_pipeline(
         processor=script_evaluator,
         inputs=[
             ProcessingInput(
-                source=model_data_uri,
+                source=model_data_uri_path,
                 destination="/opt/ml/processing/model",
             ),
             ProcessingInput(
