@@ -230,6 +230,7 @@ def get_pipeline(
                 ].S3Output.S3Uri
             ),
         },
+        cache_config=cache_config
     )
 
     """
@@ -261,12 +262,21 @@ def get_pipeline(
         sagemaker_session=pipeline_session,
     )
 
+    bucket_models = 'iamdscli-models-personal'
+    model_prefix = 'best-model'
+    model_s3_uri = step_tuning.get_top_model_s3_uri(
+    top_k=0,
+    s3_bucket=bucket_models,
+    prefix=model_prefix
+)
+    print("Model S3 URI:", model_s3_uri)
+
     evaluation_step = ProcessingStep(
         name="ModelEvaluation",
         processor=script_evaluator,
         inputs=[
             ProcessingInput(
-                source=step_tuning.properties.BestTrainingJob.ModelArtifacts.S3ModelArtifacts,
+                source=model_s3_uri,
                 destination="/opt/ml/processing/model",
             ),
             ProcessingInput(
