@@ -254,12 +254,10 @@ def get_pipeline(
     )
     """
 
-    # Obtendo o URI do melhor modelo
-    model_data_uri = step_tuning.get_top_model_s3_uri(
-        top_k=0,
-        s3_bucket=bucket_models,
-        prefix='best_model'
-    )
+    best_training_job_name = step_tuning.properties.BestTrainingJob.TrainingJobName
+
+    # Construir o URI completo do modelo
+    model_data_uri = f"{model_output_s3_path}{best_training_job_name}/output/model.tar.gz"
 
     model = Model(
         image_uri=image_uri,
