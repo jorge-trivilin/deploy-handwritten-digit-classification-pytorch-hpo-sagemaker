@@ -2,18 +2,32 @@
 import boto3  # type: ignore
 import os
 import logging
+from typing import List, Dict, Union
+
 from sagemaker.session import Session  # type: ignore
 from sagemaker.model_metrics import MetricsSource, ModelMetrics  # type: ignore
+
 from sagemaker.workflow.step_collections import RegisterModel  # type: ignore
 from sagemaker.workflow.pipeline_context import PipelineSession  # type: ignore
-from sagemaker.processing import ScriptProcessor  # type: ignore
-from sagemaker.workflow.steps import ProcessingStep, TrainingStep  # type: ignore
+from sagemaker.workflow.steps import ProcessingStep, TrainingStep, TuningStep  # type: ignore
 from sagemaker.workflow.parameters import ParameterString, ParameterInteger  # type: ignore
-from sagemaker.processing import ProcessingInput, ProcessingOutput  # type: ignore
-from sagemaker.inputs import TrainingInput  # type: ignore
-from sagemaker.estimator import Estimator  # type: ignore
 from sagemaker.workflow.pipeline import Pipeline  # type: ignore
 from sagemaker.workflow.steps import CacheConfig
+from sagemaker.workflow.entities import PipelineVariable # type: ignore
+
+from sagemaker.processing import ScriptProcessor  # type: ignore
+from sagemaker.processing import ProcessingInput, ProcessingOutput  # type: ignore
+
+from sagemaker.inputs import TrainingInput  # type: ignore
+from sagemaker.estimator import Estimator  # type: ignore
+
+from sagemaker.tuner import (  # type: ignore
+    ContinuousParameter,
+    IntegerParameter,
+    HyperparameterTuner,
+    CategoricalParameter
+)
+
 
 # Configuração de logs
 logging.basicConfig(
@@ -161,6 +175,50 @@ def get_pipeline(
         sagemaker_session=pipeline_session,
     )
 
+    hyperparameter_ranges = {
+    "lr": ContinuousParameter(0.001, 0.1),
+    "batch-size": CategoricalParameter([32, 64, 128, 256, 512]),
+    }
+
+    objective_metric_name = "average test loss"
+
+    def get_metric_definitions() -> List[Dict[str, Union[str, PipelineVariable]]]:
+        return [
+        {"Name": "average test loss", "Regex": "Test set: Average loss: ([0-9\\.]+)"}
+        ]
+
+    metric_definitions = get_metric_definitions()
+
+    tuner = HyperparameterTuner(
+    estimator=pytorch_estimator,
+    objective_metric_name=objective_metric_name,
+    hyperparameter_ranges=hyperparameter_ranges,
+    max_jobs=2,
+    max_parallel_jobs=2,
+    objective_type="Minimize",
+    metric_definitions=metric_definitions,
+    strategy="Random",
+    early_stopping_type="Auto"
+    )
+
+    step_tuning = TuningStep(
+    name = "HPTuning",
+    tuner=tuner,
+    inputs={
+            "train": TrainingInput(
+                s3_data=preprocessing_step.properties.ProcessingOutputConfig.Outputs[  # type: ignore
+                    "processed_train_data"
+                ].S3Output.S3Uri
+            ),
+            "test": TrainingInput(
+                s3_data=preprocessing_step.properties.ProcessingOutputConfig.Outputs[  # type: ignore
+                    "processed_test_data"
+                ].S3Output.S3Uri
+            ),
+        },
+    )
+
+    """
     training_step = TrainingStep(
         name="TrainingStep",
         estimator=pytorch_estimator,
@@ -177,6 +235,7 @@ def get_pipeline(
             ),
         },
     )
+    """
 
     # Passo de avaliação do modelo
     script_evaluator = ScriptProcessor(
@@ -193,7 +252,7 @@ def get_pipeline(
         processor=script_evaluator,
         inputs=[
             ProcessingInput(
-                source=training_step.properties.ModelArtifacts.S3ModelArtifacts,
+                source=step_tuning.get_top_model_s3_uri(top_k=0, s3_bucket=bucket_models),
                 destination="/opt/ml/processing/model",
             ),
             ProcessingInput(
@@ -226,7 +285,7 @@ def get_pipeline(
     register_model_step = RegisterModel(
         name="RegisterModelStep",
         estimator=pytorch_estimator,
-        model_data=training_step.properties.ModelArtifacts.S3ModelArtifacts,  # type: ignore
+        model_data=step_tuning.get_top_model_s3_uri(top_k=0, s3_bucket=bucket_models),
         content_types=["application/json"],
         response_types=["application/json"],
         inference_instances=["ml.t2.medium", "ml.m5.xlarge"],
@@ -236,9 +295,9 @@ def get_pipeline(
         model_metrics=model_metrics,
     )
 
-    # Step dependencies
-    training_step.depends_on = [preprocessing_step]
-    evaluation_step.depends_on = [training_step]
+    # Definir as dependências
+    step_tuning.depends_on = [preprocessing_step]
+    evaluation_step.depends_on = [step_tuning]
     register_model_step.depends_on = [evaluation_step]
 
     # Definindo o pipeline
@@ -251,7 +310,7 @@ def get_pipeline(
             processing_instance_count,
             processing_instance_type,
         ],
-        steps=[preprocessing_step, training_step, evaluation_step, register_model_step],
+        steps=[preprocessing_step, step_tuning, evaluation_step, register_model_step],
         sagemaker_session=pipeline_session,
     )
 
