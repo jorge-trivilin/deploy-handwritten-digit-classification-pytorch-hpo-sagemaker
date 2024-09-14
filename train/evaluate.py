@@ -1,13 +1,17 @@
 import argparse
 import os
+import json
+import tarfile  # Import necessário para manipular arquivos tar
+import logging
+import sys
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import logging
-import sys
 from torch.utils.data import DataLoader, Dataset
-import json
-import tarfile  # Import necessário para manipular arquivos tar
+
+from sklearn.metrics import precision_score, recall_score, f1_score  # type: ignore
+
 
 # Configuração do logger
 logger = logging.getLogger(__name__)
@@ -98,22 +102,32 @@ def evaluate(model, test_loader, device):
     test_loss = 0
     correct = 0
     total = 0
+    all_preds = []
+    all_targets = []
+
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
             test_loss += F.nll_loss(output, target, reduction="sum").item()
-            pred = output.argmax(
-                dim=1, keepdim=True
-            )  # Pega o índice da maior log-probabilidade
-            correct += pred.eq(target.view_as(pred)).sum().item()
+            pred = output.argmax(dim=1, keepdim=False)
+            correct += pred.eq(target).sum().item()
             total += len(target)
+            all_preds.extend(pred.cpu().numpy())
+            all_targets.extend(target.cpu().numpy())
 
     test_loss /= total
     accuracy = 100.0 * correct / total
 
+    # Calcular métricas adicionais
+    precision = precision_score(all_targets, all_preds, average="weighted")
+    recall = recall_score(all_targets, all_preds, average="weighted")
+    f1 = f1_score(all_targets, all_preds, average="weighted")
+
     logger.info(f"Test Loss: {test_loss:.4f}, Accuracy: {accuracy:.2f}%")
-    return test_loss, accuracy
+    logger.info(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F1 Score: {f1:.4f}")
+
+    return test_loss, accuracy, precision, recall, f1
 
 
 if __name__ == "__main__":
@@ -151,11 +165,22 @@ if __name__ == "__main__":
     test_loader = _get_test_data_loader(test_data_file, args.batch_size)
 
     # Avaliar o modelo
-    test_loss, accuracy = evaluate(model, test_loader, device)
+    test_loss, accuracy, precision, recall, f1 = evaluate(model, test_loader, device)
+
+    # Adaptar o dicionário de métricas
+    metrics_data = {
+        "multiclass_classification_metrics": {
+            "accuracy": {"value": accuracy / 100},
+            "precision": {"value": precision},
+            "recall": {"value": recall},
+            "f1_score": {"value": f1},
+            "loss": {"value": test_loss},
+        }
+    }
 
     # Salvar os resultados no diretório de saída
     os.makedirs(args.evaluation_output_dir, exist_ok=True)
     evaluation_output_path = os.path.join(args.evaluation_output_dir, "evaluation.json")
     logger.info(f"Salvando os resultados da avaliação em {evaluation_output_path}")
     with open(evaluation_output_path, "w") as f:
-        json.dump({"test_loss": test_loss, "accuracy": accuracy}, f)
+        json.dump(metrics_data, f)

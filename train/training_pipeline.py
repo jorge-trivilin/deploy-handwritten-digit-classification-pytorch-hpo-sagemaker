@@ -90,6 +90,10 @@ def get_pipeline(
         bucket_models, project_name, branch_name, version, "Pytorch", ""
     )
 
+    evaluation_metrics_output_path = create_s3_path(
+        bucket_output, project_name, branch_name, version, "Pytorch", "evaluation"
+    )
+
     # Criação da sessão do SageMaker
     sagemaker_session = get_session(region, bucket_pipeline)
 
@@ -203,6 +207,7 @@ def get_pipeline(
             ProcessingOutput(
                 source="/opt/ml/processing/evaluation",
                 output_name="evaluation_output",
+                destination=evaluation_metrics_output_path,
             )
         ],
         code="train/evaluate.py",
