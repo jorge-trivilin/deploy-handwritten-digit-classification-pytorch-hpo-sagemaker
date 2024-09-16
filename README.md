@@ -1,4 +1,4 @@
-# MNIST Digit Classification with SageMaker Pipelines
+# MLOPS Pipeline using Sagemaker Pipelines and Pytorch for MNIST Digit Classification
 
 This project implements an end-to-end machine learning workflow for MNIST digit classification using AWS SageMaker and Terraform. It includes infrastructure setup, data preprocessing, hyperparameter tuning, model training, evaluation, and deployment.
 
