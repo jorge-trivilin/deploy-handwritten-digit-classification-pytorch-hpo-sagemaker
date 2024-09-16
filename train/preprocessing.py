@@ -30,10 +30,11 @@ Directory Structure:
 """
 
 import os
-from torchvision.datasets import MNIST
-from torchvision import transforms
+from typing import List
+from torchvision.datasets import MNIST # type: ignore
+from torchvision import transforms # type: ignore
 import torch
-
+from torch import Tensor
 
 def preprocess_mnist_data():
     try:
@@ -41,22 +42,23 @@ def preprocess_mnist_data():
         output_dir = "/opt/ml/processing"  # Output directory
         print(f"Downloading MNIST dataset to directory {local_dir}...")
 
+        # Define transformations
+        transform = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+        )
+
         # Download training and test datasets directly from PyTorch
         train_dataset = MNIST(
             local_dir,
             train=True,
             download=True,
-            transform=transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-            ),
+            transform=transform,
         )
         test_dataset = MNIST(
             local_dir,
             train=False,
             download=True,
-            transform=transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-            ),
+            transform=transform,
         )
 
         # Output directories for preprocessed data
@@ -67,39 +69,39 @@ def preprocess_mnist_data():
 
         print("Processing and saving the training dataset...")
         # Load all training images and labels
-        train_images = []
-        train_labels = []
-        for i, (img, label) in enumerate(train_dataset):
+        train_images: List[Tensor] = []
+        train_labels: List[int] = []
+        for i, (img, label) in enumerate(train_dataset): # type: ignore
             train_images.append(img)
             train_labels.append(label)
             if i % 10000 == 0:
                 print(f"{i} training images processed...")
 
         # Convert to tensors
-        train_images = torch.stack(train_images)  # Dimension [N, C, H, W]
-        train_labels = torch.tensor(train_labels)
+        train_images_tensor: Tensor = torch.stack(train_images)  # Dimension [N, C, H, W]
+        train_labels_tensor: Tensor = torch.tensor(train_labels)
 
         # Save data in a single file
         torch.save(
-            (train_images, train_labels), os.path.join(train_output_dir, "train.pt")
+            (train_images_tensor, train_labels_tensor), os.path.join(train_output_dir, "train.pt")
         )
 
         print("Processing and saving the test dataset...")
         # Load all test images and labels
-        test_images = []
-        test_labels = []
-        for i, (img, label) in enumerate(test_dataset):
+        test_images: List[Tensor] = []
+        test_labels: List[int] = []
+        for i, (img, label) in enumerate(test_dataset): # type: ignore
             test_images.append(img)
             test_labels.append(label)
             if i % 1000 == 0:
                 print(f"{i} test images processed...")
 
         # Convert to tensors
-        test_images = torch.stack(test_images)
-        test_labels = torch.tensor(test_labels)
+        test_images_tensor: Tensor = torch.stack(test_images)
+        test_labels_tensor: Tensor = torch.tensor(test_labels)
 
         # Save data in a single file
-        torch.save((test_images, test_labels), os.path.join(test_output_dir, "test.pt"))
+        torch.save((test_images_tensor, test_labels_tensor), os.path.join(test_output_dir, "test.pt"))
 
         print(
             f"Preprocessed MNIST data saved in directories {train_output_dir} and {test_output_dir}"
@@ -107,7 +109,6 @@ def preprocess_mnist_data():
     except Exception as e:
         print(f"An error occurred during preprocessing: {str(e)}")
         raise
-
 
 if __name__ == "__main__":
     preprocess_mnist_data()

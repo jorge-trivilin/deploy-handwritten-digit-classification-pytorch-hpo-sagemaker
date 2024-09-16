@@ -44,14 +44,17 @@ import json
 import logging
 import os
 import sys
+from typing import Optional, Union
 
 import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
+from torch.optim.sgd import SGD
 from torch.utils.data import Dataset
 import torch.utils.data.distributed
+from torch.utils.data import DataLoader, DistributedSampler
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -63,7 +66,7 @@ class CustomMNISTDataset(Dataset):
         logger.info(f"Loading data from {data_file}")
         self.images, self.labels = torch.load(data_file)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.labels)
 
     def __getitem__(self, idx):
@@ -92,27 +95,28 @@ class Net(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-def _get_train_data_loader(batch_size, data_file, is_distributed, **kwargs):
+def _get_train_data_loader(batch_size: int, data_file: str, is_distributed: bool, **kwargs) -> tuple[DataLoader[tuple[torch.Tensor, torch.Tensor]], Optional[DistributedSampler]]:
     logger.info("Get train data loader")
     dataset = CustomMNISTDataset(data_file=data_file)
-    train_sampler = (
-        torch.utils.data.distributed.DistributedSampler(dataset)
+    train_sampler: Optional[DistributedSampler] = (
+        DistributedSampler(dataset)
         if is_distributed
         else None
     )
-    return torch.utils.data.DataLoader(
+    data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=(train_sampler is None),
         sampler=train_sampler,
         **kwargs,
     )
+    return data_loader, train_sampler
 
 
-def _get_test_data_loader(test_batch_size, data_file, **kwargs):
+def _get_test_data_loader(test_batch_size: int, data_file: str, **kwargs) -> DataLoader[tuple[torch.Tensor, torch.Tensor]]:
     logger.info("Get test data loader")
     dataset = CustomMNISTDataset(data_file=data_file)
-    return torch.utils.data.DataLoader(
+    return DataLoader(
         dataset, batch_size=test_batch_size, shuffle=True, **kwargs
     )
 
@@ -124,6 +128,18 @@ def _average_gradients(model):
         dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM)
         param.grad.data /= size
 
+# Defining a custom model type 
+ModelType = Union[Net, nn.parallel.DistributedDataParallel, nn.DataParallel]
+
+# Auxiliar function for model creation
+# Função auxiliar para criar o modelo
+def create_model(base_model: Net, is_distributed: bool, use_cuda: bool) -> ModelType:
+    if is_distributed and use_cuda:
+        return nn.parallel.DistributedDataParallel(base_model)
+    elif use_cuda:
+        return nn.DataParallel(base_model)
+    else:
+        return base_model
 
 def train(args):
     is_distributed = len(args.hosts) > 1 and args.backend is not None
@@ -155,25 +171,22 @@ def train(args):
     train_data_file = os.path.join(args.train_data_dir, "train.pt")
     test_data_file = os.path.join(args.test_data_dir, "test.pt")
 
-    train_loader = _get_train_data_loader(
+    train_loader, train_sampler = _get_train_data_loader(
         args.batch_size, train_data_file, is_distributed, **kwargs
     )
     test_loader = _get_test_data_loader(args.test_batch_size, test_data_file, **kwargs)
 
-    model = Net().to(device)
-    if is_distributed and use_cuda:
-        # Multi-machine multi-GPU case
-        model = torch.nn.parallel.DistributedDataParallel(model)
-    else:
-        # Single-machine multi-GPU case or single-machine or multi-machine CPU case
-        model = torch.nn.DataParallel(model)
+    base_model = Net().to(device)
 
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+    # Using create_model function to initiate the model
+    model: ModelType = create_model(base_model, is_distributed, use_cuda)
+
+    optimizer = SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
     for epoch in range(1, args.epochs + 1):
         model.train()
-        if is_distributed:
-            train_loader.sampler.set_epoch(epoch)
+        if is_distributed and train_sampler is not None:
+            train_sampler.set_epoch(epoch)
         for batch_idx, (data, target) in enumerate(train_loader, 1):
             data, target = data.to(device), target.to(device)
             optimizer.zero_grad()
@@ -186,48 +199,52 @@ def train(args):
             optimizer.step()
             if batch_idx % args.log_interval == 0:
                 logger.info(
-                    f"Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} "
+                    f"Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} " # type: ignore
                     f"({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}"
                 )
         test(model, test_loader, device)
     save_model(model, args.model_dir)
 
 
-def test(model, test_loader, device):
+def test(model: ModelType, test_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]], device: torch.device):
     model.eval()
-    test_loss = 0
-    correct = 0
+    test_loss: float = 0.0
+    correct: int = 0
+    total: int = 0
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(
-                output, target, reduction="sum"
-            ).item()  # Sum up batch loss
-            pred = output.argmax(
-                dim=1, keepdim=True
-            )  # Get the index of the max log-probability
+            test_loss += F.nll_loss(output, target, reduction="sum").item()  # Sum up batch loss
+            pred = output.argmax(dim=1, keepdim=True)  # Get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
+            total += target.size(0)
 
-    test_loss /= len(test_loader.dataset)
+    test_loss /= total
+    accuracy = 100. * correct / total
     logger.info(
-        f"Test set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)} "
-        f"({100. * correct / len(test_loader.dataset):.0f}%)\n"
+        f"Test set: Average loss: {test_loss:.4f}, "
+        f"Accuracy: {correct}/{total} ({accuracy:.2f}%)\n"
     )
 
 
 def model_fn(model_dir):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Net()
+    model: ModelType = Net()
     with open(os.path.join(model_dir, "model.pth"), "rb") as f:
         model.load_state_dict(torch.load(f, map_location=device))
     return model.to(device)
 
 
-def save_model(model, model_dir):
+def save_model(model: ModelType, model_dir):
     logger.info("Saving the model.")
     path = os.path.join(model_dir, "model.pth")
-    torch.save(model.state_dict(), path)
+
+    # Salva o state_dict do modelo base se for DistributedDataParallel ou DataParallel
+    if isinstance(model, (nn.parallel.DistributedDataParallel, nn.DataParallel)):
+        torch.save(model.module.state_dict(), path)
+    else:
+        torch.save(model.state_dict(), path)
 
 
 if __name__ == "__main__":
@@ -295,7 +312,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--test_data_dir", type=str, default=os.environ["SM_CHANNEL_TEST"]
     )
-    parser.add_argument("--num-gpus", type=int, default=os.environ["SM_NUM_GPUS"])
+    parser.add_argument(
+    "--num-gpus", type=int, default=int(os.environ.get("SM_NUM_GPUS", "0"))
+)
+
 
     args = parser.parse_args()
 

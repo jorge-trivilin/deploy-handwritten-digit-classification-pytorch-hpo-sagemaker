@@ -49,7 +49,7 @@ Directory Structure:
 import argparse
 import os
 import json
-import tarfile  # Necessary import to handle tar files
+import tarfile
 import logging
 import sys
 
@@ -60,6 +60,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from sklearn.metrics import precision_score, recall_score, f1_score  # type: ignore
 
+from typing import List, Tuple, cast
 
 # Logger configuration
 logger = logging.getLogger(__name__)
@@ -76,7 +77,7 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(320, 50)
         self.fc2 = nn.Linear(50, 10)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
         x = x.view(-1, 320)
@@ -85,28 +86,25 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
 
-
 # Custom class to load preprocessed data (.pt)
 class CustomMNISTDataset(Dataset):
-    def __init__(self, data_file):
+    def __init__(self, data_file: str):
         self.images, self.labels = torch.load(data_file)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.labels)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
         image = self.images[idx]
         label = self.labels[idx]
         return image, label
 
-
-def _get_test_data_loader(test_data_file, batch_size):
+def _get_test_data_loader(test_data_file: str, batch_size: int) -> DataLoader:
     dataset = CustomMNISTDataset(data_file=test_data_file)
     return DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
-
 # Function to load the trained model
-def load_model(model_dir, device):
+def load_model(model_dir: str, device: torch.device) -> nn.Module:
     logger.info(f"Loading model from directory {model_dir}")
 
     # Check if model.tar.gz exists and extract
@@ -117,6 +115,7 @@ def load_model(model_dir, device):
             tar.extractall(path=model_dir)
     else:
         logger.error(f"model.tar.gz not found in {model_tar_path}")
+        raise FileNotFoundError(f"model.tar.gz not found in {model_tar_path}")
 
     # Now, load the model from the model.pth file
     model_path = os.path.join(model_dir, "model.pth")
@@ -127,7 +126,7 @@ def load_model(model_dir, device):
     model = Net().to(device)
 
     # Load the state_dict
-    state_dict = torch.load(model_path, map_location=device, weights_only=True)
+    state_dict = torch.load(model_path, map_location=device)
 
     # Remove the 'module.' prefix from keys, if necessary
     from collections import OrderedDict
@@ -144,41 +143,45 @@ def load_model(model_dir, device):
     model.load_state_dict(new_state_dict)
     return model
 
-
-def evaluate(model, test_loader, device):
+def evaluate(
+    model: nn.Module,
+    test_loader: DataLoader,
+    device: torch.device
+) -> Tuple[float, float, float, float, float]:
     model.eval()
-    test_loss = 0
-    correct = 0
-    total = 0
-    all_preds = []
-    all_targets = []
+    test_loss: float = 0.0
+    correct: int = 0
+    total: int = 0
+    all_preds: List[int] = []
+    all_targets: List[int] = []
 
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction="sum").item()
+            # Specify type of 'reduction' parameter as string literal
+            loss = F.nll_loss(output, target, reduction="sum").item()
+            test_loss += loss
             pred = output.argmax(dim=1, keepdim=False)
             correct += pred.eq(target).sum().item()
             total += len(target)
-            all_preds.extend(pred.cpu().numpy())
-            all_targets.extend(target.cpu().numpy())
+            all_preds.extend(pred.cpu().numpy().tolist())
+            all_targets.extend(target.cpu().numpy().tolist())
 
     test_loss /= total
     accuracy = 100.0 * correct / total
 
     # Calculate additional metrics
-    precision = precision_score(all_targets, all_preds, average="weighted")
-    recall = recall_score(all_targets, all_preds, average="weighted")
-    f1 = f1_score(all_targets, all_preds, average="weighted")
+    precision = cast(float, precision_score(all_targets, all_preds, average="weighted"))
+    recall = cast(float, recall_score(all_targets, all_preds, average="weighted"))
+    f1 = cast(float, f1_score(all_targets, all_preds, average="weighted"))
 
     logger.info(f"Test Loss: {test_loss:.4f}, Accuracy: {accuracy:.2f}%")
     logger.info(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F1 Score: {f1:.4f}")
 
     return test_loss, accuracy, precision, recall, f1
 
-
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser()
 
     # Expected arguments from SageMaker
@@ -195,12 +198,12 @@ if __name__ == "__main__":
         "--evaluation-output-dir", type=str, default="/opt/ml/processing/evaluation"
     )
     parser.add_argument(
-        "--num-gpus", type=int, default=os.environ.get("SM_NUM_GPUS", "0")
+        "--num-gpus", type=int, default=int(os.environ.get("SM_NUM_GPUS", "0"))
     )
 
     args = parser.parse_args()
 
-    use_cuda = int(args.num_gpus) > 0 and torch.cuda.is_available()
+    use_cuda: bool = args.num_gpus > 0 and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # Load the trained model
@@ -232,3 +235,6 @@ if __name__ == "__main__":
     logger.info(f"Saving evaluation results to {evaluation_output_path}")
     with open(evaluation_output_path, "w") as f:
         json.dump(metrics_data, f)
+
+if __name__ == "__main__":
+    main()
