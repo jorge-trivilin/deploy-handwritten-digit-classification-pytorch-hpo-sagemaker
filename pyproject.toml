@@ -21,8 +21,9 @@ exclude = [
     ".ipynb_checkpoints",
     "legacy",
 ]
+ignore = ["E501"]
 
-[tool.mypy] 
+[tool.mypy]
 check_untyped_defs = true
 
 [tool.setup]
