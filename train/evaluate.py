@@ -1,7 +1,55 @@
+# evaluate.py
+
+"""
+This script evaluates a trained neural network model on a test dataset. It loads the model and test data, performs evaluation, and calculates various performance metrics.
+
+Key Components:
+- **Net**: Defines the architecture of the neural network, which is used for both training and evaluation. The network includes convolutional layers, dropout, and fully connected layers.
+- **CustomMNISTDataset**: A custom PyTorch Dataset class for loading preprocessed MNIST data.
+- **load_model**: Function to load a trained model from a tar.gz file.
+- **evaluate**: Function to evaluate the model on test data, computing loss, accuracy, precision, recall, and F1 score.
+
+Usage:
+- This script is designed to be run directly. It takes command-line arguments to specify paths for the model, test data, and output directory for evaluation results.
+
+Function Details:
+- **load_model(model_dir, device)**:
+  - **Inputs**: `model_dir` (directory containing the model file), `device` (PyTorch device).
+  - **Output**: Loaded PyTorch model.
+  - **Description**: Extracts the model from a tar.gz archive and loads its state_dict. It also handles the case where the state_dict keys have a 'module.' prefix.
+
+- **evaluate(model, test_loader, device)**:
+  - **Inputs**: `model` (PyTorch model), `test_loader` (DataLoader for test data), `device` (PyTorch device).
+  - **Outputs**: Tuple containing test loss, accuracy, precision, recall, and F1 score.
+  - **Description**: Evaluates the model on the test dataset and calculates performance metrics.
+
+Command-Line Arguments:
+- `--batch-size`: Batch size for evaluation (default: 1000).
+- `--model-dir`: Directory containing the model files (default: "/opt/ml/processing/model").
+- `--test-dir`: Directory containing the test data (default: "/opt/ml/processing/test").
+- `--evaluation-output-dir`: Directory to save evaluation results (default: "/opt/ml/processing/evaluation").
+- `--num-gpus`: Number of GPUs available (default: determined by the environment variable "SM_NUM_GPUS").
+
+Error Handling:
+- The script includes error handling for missing files and logging to report issues encountered during model loading and evaluation.
+
+Execution:
+- This script is intended to be executed as a standalone program. Upon execution, it will load the model, evaluate it on the test dataset, and save the evaluation metrics to a JSON file in the specified output directory.
+
+Directory Structure:
+- Model Directory: `/opt/ml/processing/model`
+  - Model Archive: `model.tar.gz`
+  - Model File: `model.pth`
+- Test Data Directory: `/opt/ml/processing/test`
+  - Test Data File: `test.pt`
+- Evaluation Output Directory: `/opt/ml/processing/evaluation`
+  - Evaluation Results: `evaluation.json`
+"""
+
 import argparse
 import os
 import json
-import tarfile  # Import necessário para manipular arquivos tar
+import tarfile  # Necessary import to handle tar files
 import logging
 import sys
 
@@ -13,12 +61,12 @@ from torch.utils.data import DataLoader, Dataset
 from sklearn.metrics import precision_score, recall_score, f1_score  # type: ignore
 
 
-# Configuração do logger
+# Logger configuration
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
-# Definição da arquitetura da rede neural (mesma do treinamento)
+# Neural network architecture definition (same as training)
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -38,7 +86,7 @@ class Net(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-# Classe personalizada para carregar os dados pré-processados (.pt)
+# Custom class to load preprocessed data (.pt)
 class CustomMNISTDataset(Dataset):
     def __init__(self, data_file):
         self.images, self.labels = torch.load(data_file)
@@ -57,42 +105,42 @@ def _get_test_data_loader(test_data_file, batch_size):
     return DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
 
-# Função para carregar o modelo treinado
+# Function to load the trained model
 def load_model(model_dir, device):
-    logger.info(f"Carregando o modelo do diretório {model_dir}")
+    logger.info(f"Loading model from directory {model_dir}")
 
-    # Verificar se model.tar.gz existe e extrair
+    # Check if model.tar.gz exists and extract
     model_tar_path = os.path.join(model_dir, "model.tar.gz")
     if os.path.exists(model_tar_path):
-        logger.info(f"Encontrado model.tar.gz em {model_tar_path}, extraindo...")
+        logger.info(f"Found model.tar.gz in {model_tar_path}, extracting...")
         with tarfile.open(model_tar_path, "r:gz") as tar:
             tar.extractall(path=model_dir)
     else:
-        logger.error(f"model.tar.gz não encontrado em {model_tar_path}")
+        logger.error(f"model.tar.gz not found in {model_tar_path}")
 
-    # Agora, carregar o modelo a partir do arquivo model.pth
+    # Now, load the model from the model.pth file
     model_path = os.path.join(model_dir, "model.pth")
     if not os.path.exists(model_path):
-        logger.error(f"Arquivo de modelo {model_path} não encontrado após extração.")
-        raise FileNotFoundError(f"Arquivo de modelo {model_path} não encontrado.")
+        logger.error(f"Model file {model_path} not found after extraction.")
+        raise FileNotFoundError(f"Model file {model_path} not found.")
 
     model = Net().to(device)
 
-    # Carregar o state_dict
+    # Load the state_dict
     state_dict = torch.load(model_path, map_location=device, weights_only=True)
 
-    # Remover o prefixo 'module.' das chaves, se necessário
+    # Remove the 'module.' prefix from keys, if necessary
     from collections import OrderedDict
 
     new_state_dict = OrderedDict()
     for k, v in state_dict.items():
         if k.startswith("module."):
-            new_key = k[7:]  # Remover 'module.' do início da chave
+            new_key = k[7:]  # Remove 'module.' from the beginning of the key
         else:
             new_key = k
         new_state_dict[new_key] = v
 
-    # Carregar o novo state_dict no modelo
+    # Load the new state_dict into the model
     model.load_state_dict(new_state_dict)
     return model
 
@@ -119,7 +167,7 @@ def evaluate(model, test_loader, device):
     test_loss /= total
     accuracy = 100.0 * correct / total
 
-    # Calcular métricas adicionais
+    # Calculate additional metrics
     precision = precision_score(all_targets, all_preds, average="weighted")
     recall = recall_score(all_targets, all_preds, average="weighted")
     f1 = f1_score(all_targets, all_preds, average="weighted")
@@ -133,13 +181,13 @@ def evaluate(model, test_loader, device):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    # Argumentos esperados do SageMaker
+    # Expected arguments from SageMaker
     parser.add_argument(
         "--batch-size",
         type=int,
         default=1000,
         metavar="N",
-        help="Tamanho do batch para avaliação",
+        help="Batch size for evaluation",
     )
     parser.add_argument("--model-dir", type=str, default="/opt/ml/processing/model")
     parser.add_argument("--test-dir", type=str, default="/opt/ml/processing/test")
@@ -155,19 +203,19 @@ if __name__ == "__main__":
     use_cuda = int(args.num_gpus) > 0 and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    # Carregar o modelo treinado
+    # Load the trained model
     model = load_model(args.model_dir, device)
 
-    # Construir o caminho completo para o arquivo test.pt
+    # Build the full path to the test.pt file
     test_data_file = os.path.join(args.test_dir, "test.pt")
 
-    # Carregar os dados de teste
+    # Load the test data
     test_loader = _get_test_data_loader(test_data_file, args.batch_size)
 
-    # Avaliar o modelo
+    # Evaluate the model
     test_loss, accuracy, precision, recall, f1 = evaluate(model, test_loader, device)
 
-    # Adaptar o dicionário de métricas
+    # Adapt the metrics dictionary
     metrics_data = {
         "multiclass_classification_metrics": {
             "accuracy": {"value": accuracy / 100},
@@ -178,9 +226,9 @@ if __name__ == "__main__":
         }
     }
 
-    # Salvar os resultados no diretório de saída
+    # Save the results in the output directory
     os.makedirs(args.evaluation_output_dir, exist_ok=True)
     evaluation_output_path = os.path.join(args.evaluation_output_dir, "evaluation.json")
-    logger.info(f"Salvando os resultados da avaliação em {evaluation_output_path}")
+    logger.info(f"Saving evaluation results to {evaluation_output_path}")
     with open(evaluation_output_path, "w") as f:
         json.dump(metrics_data, f)

@@ -1,19 +1,19 @@
 FROM python:3.12
 
-# Instale as dependências do sistema necessárias
+# Install necessary system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Copie o arquivo de requirements para dentro do container
+# Copy the requirements file into the container
 COPY requirements.txt /opt/ml/code/
 
-# Instala as bibliotecas Python listadas no requirements.txt e o sagemaker_training_toolkit
+# Install Python libraries listed in requirements.txt and sagemaker_training_toolkit
 RUN pip install --no-cache-dir -r /opt/ml/code/requirements.txt
 
-# Copie seu código para o contêiner
+# Copy your code into the container
 COPY train.py /opt/ml/code/train.py
 
-# Defina o diretório de trabalho
+# Set the working directory
 WORKDIR /opt/ml/code

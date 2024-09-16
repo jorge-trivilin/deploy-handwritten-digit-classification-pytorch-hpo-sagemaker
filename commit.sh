@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Obtém o nome da branch atual
+# Gets the current branch
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 
 git add .

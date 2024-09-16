@@ -1,3 +1,44 @@
+# train.py
+
+"""
+This script trains and tests a Convolutional Neural Network (CNN) on the MNIST dataset using PyTorch. It supports both single-machine and distributed training across multiple machines and GPUs. 
+
+Key components:
+
+1. **CustomMNISTDataset**: A PyTorch Dataset class for loading MNIST data from a file.
+2. **Net**: A CNN model class based on the example from PyTorch's GitHub repository.
+3. **_get_train_data_loader**: A helper function to get the training data loader with support for distributed training.
+4. **_get_test_data_loader**: A helper function to get the test data loader.
+5. **_average_gradients**: A function to average gradients across multiple processes in a distributed setup.
+6. **train**: The main training function which sets up the environment, data loaders, model, and optimizer, and performs training and evaluation.
+7. **test**: A function to evaluate the model on the test dataset.
+8. **model_fn**: A function to load a model from a specified directory.
+9. **save_model**: A function to save the trained model to a specified directory.
+
+Usage:
+- The script can be run directly with command-line arguments for various hyperparameters.
+- It utilizes environment variables for paths and distributed training settings, commonly used in AWS SageMaker environments.
+
+Command-line arguments:
+- `--batch-size`: Input batch size for training.
+- `--test-batch-size`: Input batch size for testing.
+- `--epochs`: Number of epochs for training.
+- `--lr`: Learning rate for the optimizer.
+- `--momentum`: Momentum for SGD.
+- `--seed`: Random seed for reproducibility.
+- `--log-interval`: Interval for logging training status.
+- `--backend`: Backend for distributed training (e.g., tcp, gloo, nccl).
+- `--hosts`: List of hosts for distributed training.
+- `--current-host`: Current host name.
+- `--model-dir`: Directory to save the trained model.
+- `--train_data_dir`: Directory for training data.
+- `--test_data_dir`: Directory for test data.
+- `--num-gpus`: Number of GPUs available for training.
+
+Logging:
+- Logs are configured to output debug information to standard output.
+"""
+
 import argparse
 import json
 import logging
@@ -19,7 +60,7 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 class CustomMNISTDataset(Dataset):
     def __init__(self, data_file):
-        logger.info(f"Carregando dados de {data_file}")
+        logger.info(f"Loading data from {data_file}")
         self.images, self.labels = torch.load(data_file)
 
     def __len__(self):
@@ -31,7 +72,7 @@ class CustomMNISTDataset(Dataset):
         return image, label
 
 
-# Modelo baseado em https://github.com/pytorch/examples/blob/master/mnist/main.py
+# Model based on https://github.com/pytorch/examples/blob/master/mnist/main.py
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -110,7 +151,7 @@ def train(args):
     if use_cuda:
         torch.cuda.manual_seed(args.seed)
 
-    # Ajuste nos caminhos dos arquivos de dados
+    # Adjustment in data file paths
     train_data_file = os.path.join(args.train_data_dir, "train.pt")
     test_data_file = os.path.join(args.test_data_dir, "test.pt")
 
@@ -258,9 +299,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Adicionando logs para depuração
-    logger.info(f"Argumentos de entrada: {args}")
-    logger.info(f"Arquivos em {args.train_data_dir}: {os.listdir(args.train_data_dir)}")
-    logger.info(f"Arquivos em {args.test_data_dir}: {os.listdir(args.test_data_dir)}")
+    # Adding logs for debugging
+    logger.info(f"Input arguments: {args}")
+    logger.info(f"Files in {args.train_data_dir}: {os.listdir(args.train_data_dir)}")
+    logger.info(f"Files in {args.test_data_dir}: {os.listdir(args.test_data_dir)}")
 
     train(args)
