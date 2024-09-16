@@ -1,0 +1,112 @@
+name: Terraform
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  terraform:
+    if: contains(github.event.head_commit.message, '-terraform')
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'staging' && 'staging' || 'development' }}
+
+    env:  # Defining environment variables
+      TF_VAR_aws_default_region: ${{ secrets.AWS_DEFAULT_REGION }}
+      TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+      TF_VAR_bucket_glue: ${{ secrets.BUCKET_GLUE }}
+      TF_VAR_bucket_pipeline: ${{ secrets.BUCKET_PIPELINE }}
+      TF_VAR_bucket_processed: ${{ secrets.BUCKET_PROCESSED }}
+      TF_VAR_bucket_raw: ${{ secrets.BUCKET_RAW }}
+      TF_VAR_bucket_staging: ${{ secrets.BUCKET_STAGING }}
+      TF_VAR_bucket_validation: ${{ secrets.BUCKET_VALIDATION }}
+      TF_VAR_bucket_output: ${{ secrets.BUCKET_OUTPUT }}
+      TF_VAR_bucket_models: ${{ secrets.BUCKET_MODELS }}
+      TF_VAR_bucket_airflow: ${{ secrets.BUCKET_AIRFLOW }}
+      #TF_VAR_database_name: ${{ secrets.DATABASE_NAME }}
+      TF_VAR_glue_service_role: ${{ secrets.GLUE_SERVICE_ROLE }}
+      TF_VAR_project_name: ${{ secrets.PROJECT_NAME }}
+      TF_VAR_sagemaker_role_arn: ${{ secrets.SAGEMAKER_ROLE_ARN }}
+      #TF_VAR_source_table_name: ${{ secrets.SOURCE_TABLE_NAME }}
+      TF_VAR_branch_name: ${{ github.ref_name }}
+      TF_VAR_environment: ${{ vars.ENV }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Verificar Diretório
+        run: |
+          pwd
+          ls -la
+          ls -la infraestrutura
+        working-directory: .
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.5
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+    
+      - name: Generate Commit Version
+        id: generate_commit_version
+        run: |
+          commit_version=$(date +'%Y%m%d%H%M%S')
+          echo "TF_VAR_commit_version=$commit_version" >> $GITHUB_ENV
+          echo "commit_version=$commit_version" >> $GITHUB_OUTPUT
+
+      - name: Run Docker Build and Push Script
+        run: |
+          chmod +x ./train/build-and-push-docker.sh
+          ./train/build-and-push-docker.sh ${{ secrets.AWS_ACCOUNT_ID }} ${{ steps.generate_commit_version.outputs.commit_version }}
+ 
+      - name: Verify Terraform Environment Variables
+        run: |
+          echo "Verifying Terraform Environment Variables..."
+          echo "TF_VAR_aws_default_region: $TF_VAR_aws_default_region"
+          echo "TF_VAR_aws_account_id: $TF_VAR_aws_account_id"
+          echo "TF_VAR_bucket_glue: $TF_VAR_bucket_glue"
+          echo "TF_VAR_bucket_pipeline: $TF_VAR_bucket_pipeline"
+          echo "TF_VAR_bucket_processed: $TF_VAR_bucket_processed"
+          echo "TF_VAR_bucket_raw: $TF_VAR_bucket_raw"
+          echo "TF_VAR_bucket_staging: $TF_VAR_bucket_staging"
+          echo "TF_VAR_bucket_validation: $TF_VAR_bucket_validation"
+          echo "TF_VAR_bucket_output: $TF_VAR_bucket_output"
+          echo "TF_VAR_bucket_models: $TF_VAR_bucket_models"
+          echo "TF_VAR_bucket_airflow: $TF_VAR_bucket_airflow"
+          echo "TF_VAR_glue_service_role: $TF_VAR_glue_service_role"
+          echo "TF_VAR_project_name: $TF_VAR_project_name"
+          echo "TF_VAR_sagemaker_role_arn: $TF_VAR_sagemaker_role_arn"
+          echo "TF_VAR_source_table_name: $TF_VAR_source_table_name"
+          echo "TF_VAR_branch_name: $TF_VAR_branch_name"
+          echo "TF_VAR_commit_version: $TF_VAR_commit_version"
+          echo "TF_VAR_image_uri: $TF_VAR_image_uri"
+          echo "TF_VAR_environment: $TF_VAR_environment"
+          env | grep TF_VAR_
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./infraestrutura
+
+      - name: Terraform Plan
+        run: terraform plan -input=false -out=plan.out
+        working-directory: ./infraestrutura
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve plan.out
+        working-directory: ./infraestrutura
+
+      - name: Commit S3 URIs and Image URI
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: |
+            infraestrutura/s3_uris.json
+            infraestrutura/image_uri.json
+            infraestrutura/commit_version.json
+          message: 'Update S3 URIs and Image URI'

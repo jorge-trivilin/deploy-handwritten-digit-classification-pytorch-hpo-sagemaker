@@ -1,0 +1,62 @@
+# -- run_pipeline.yml --
+name: Run SageMaker Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  run-pipeline:
+    if: contains(github.event.head_commit.message, '-training')
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'staging' && 'staging' || 'development' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+    
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install boto3 sagemaker
+
+      - name: Set environment variables
+        run: |
+          echo "AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" >> $GITHUB_ENV
+          echo "SAGEMAKER_ROLE_ARN=${{ secrets.SAGEMAKER_ROLE_ARN }}" >> $GITHUB_ENV
+          echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "PROJECT_NAME=${{ secrets.PROJECT_NAME }}" >> $GITHUB_ENV
+          echo "BUCKET_RAW=${{ secrets.BUCKET_RAW }}" >> $GITHUB_ENV
+          echo "BUCKET_PROCESSED=${{ secrets.BUCKET_PROCESSED }}" >> $GITHUB_ENV
+          echo "BUCKET_STAGING=${{ secrets.BUCKET_STAGING }}" >> $GITHUB_ENV
+          echo "BUCKET_VALIDATION=${{ secrets.BUCKET_VALIDATION }}" >> $GITHUB_ENV
+          echo "BUCKET_OUTPUT=${{ secrets.BUCKET_OUTPUT }}" >> $GITHUB_ENV
+          echo "BUCKET_MODELS=${{ secrets.BUCKET_MODELS }}" >> $GITHUB_ENV
+          echo "ENV=${{ vars.ENV }}" >> $GITHUB_ENV
+
+      - name: Read Image URI from JSON
+        run: |
+          IMAGE_URI=$(jq -r .image_uri infraestrutura/image_uri.json)
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: Read Version from Json
+        run: |
+          VERSION=$(jq -r .commit_version infraestrutura/commit_version.json)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Run Training Pipeline
+        run: python run_training_pipeline.py

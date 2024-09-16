@@ -1,0 +1,66 @@
+name: Create Glue S3 Folder and Upload ETL Script
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  create-glue-folder-and-upload-script:
+    if: contains(github.event.head_commit.message, '-upload_glue')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Set environment variables
+        run: |
+          echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" >> $GITHUB_ENV
+          echo "BUCKET_GLUE=${{ secrets.BUCKET_GLUE }}" >> $GITHUB_ENV
+          echo "PROJECT_NAME=${{ secrets.PROJECT_NAME }}" >> $GITHUB_ENV
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install boto3 pytz
+
+      - name: Run Glue Folder Setup Script and Capture URI
+        id: glue_setup
+        run: |
+          source venv/bin/activate
+          uri=$(python glue/code/create_glue_folder.py)
+          echo "GLUE_URI=$uri" >> $GITHUB_ENV
+
+      - name: Upload Glue ETL Script to S3
+        run: |
+          if [ -z "${GLUE_URI}" ]; then
+            echo "Error: GLUE_URI is not set"
+            exit 1
+          fi
+          source venv/bin/activate
+          aws s3 cp glue/scripts/etl.py "${GLUE_URI}etl.py"
+          aws s3 cp glue/scripts/test_pre_processing.py "${GLUE_URI}test_pre_processing.py"
+          aws s3 cp glue/scripts/train_pre_processing.py "${GLUE_URI}train_pre_processing.py"
+        env:
+          GLUE_URI: ${{ env.GLUE_URI }}
+
+      - name: Commit and push URIs file to glue/uri
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p glue/uri  # Ensure the glue/uri directory exists
+          cp uris/${{ github.ref_name }}_glue_uri.json glue/uri/
+          git add glue/uri/${{ github.ref_name }}_glue_uri.json
+          git commit -m "Add Glue S3 URI for branch ${{ github.ref_name }}"
+          git push
+        if: success()
