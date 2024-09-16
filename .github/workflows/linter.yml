@@ -15,25 +15,24 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.x' 
+          python-version: '3.12.6'
 
-      - name: Cache dependencies 
+      - name: Cache pip packages
         uses: actions/cache@v3
         with:
-          path: venv 
+          path: ~/.cache/pip
           key: ${{ runner.os }}-python-${{ hashFiles('requirements.txt') }} 
 
       - name: Install dependencies
         run: |
           python -m venv venv 
-          source venv/bin/activate
-          pip install --upgrade pip
-          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi 
+          venv/bin/python -m pip install --upgrade pip
+          if [ -f "requirements.txt" ]; then venv/bin/python -m pip install -r requirements.txt; fi 
+
       - name: Run Black
         run: |
-          source venv/bin/activate
-          black --check .
+          venv/bin/python -m black --check .
+
       - name: Run Ruff
         run: |
-          source venv/bin/activate
-          ruff .
+          venv/bin/python -m ruff .

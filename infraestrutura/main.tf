@@ -16,12 +16,12 @@ provider "aws" {
 
 variable "branch_name" {
   type        = string
-  description = "Nome da branch"
+  description = "Branch name"
 }
 
 variable "commit_version" {
   type        = string
-  description = "Versão atual (SHA do commit)"
+  description = "Current version (commit SHA)"
 }
 
 variable "environment" {
@@ -31,7 +31,7 @@ variable "environment" {
 
 variable "aws_default_region" {
   type = string
-  description = "Região padrão da AWS"
+  description = "Default AWS region"
 }
 
 variable "aws_account_id" {
@@ -41,80 +41,80 @@ variable "aws_account_id" {
 
 variable "bucket_glue" {
   type = string
-  description = "Nome do bucket GLUE"
+  description = "GLUE bucket name"
 }
 
 variable "bucket_pipeline" {
   type = string
-  description = "Nome do bucket PIPELINE"
+  description = "PIPELINE bucket name"
 }
 
 variable "bucket_processed" {
   type = string
-  description = "Nome do bucket PROCESSED"
+  description = "PROCESSED bucket name"
 }
 
 variable "bucket_raw" {
   type = string
-  description = "Nome do bucket RAW"
+  description = "RAW bucket name"
 }
 
 variable "bucket_staging" {
   type = string
-  description = "Nome do bucket STAGING"
+  description = "STAGING bucket name"
 }
 
 variable "bucket_validation" {
   type = string
-  description = "Nome do bucket VALIDATION"
+  description = "VALIDATION bucket name"
 }
 
 variable "bucket_output" {
   type = string
-  description = "Nome do bucket OUTPUT"
+  description = "OUTPUT bucket name"
 }
 
 variable "bucket_models" {
   type = string
-  description = "Nome do bucket MODELS"
+  description = "MODELS bucket name"
 }
 
 variable "bucket_airflow" {
   type = string
-  description = "Nome do bucket AIRFLOW"
+  description = "AIRFLOW bucket name"
 }
 
 # variable "database_name" {
   # type = string
-  # description = "Nome do banco de dados"
+  # description = "Database name"
 #}
 
 variable "glue_service_role" {
   type = string
-  description = "ARN da role de serviço do Glue"
+  description = "ARN of the Glue service role"
 }
 
 variable "project_name" {
   type = string
-  description = "Nome do projeto"
+  description = "Project name"
 }
 
 variable "sagemaker_role_arn" {
   type = string
-  description = "ARN da role do SageMaker"
+  description = "ARN of the SageMaker role"
 }
 
 # variable "source_table_name" {
   #type = string
-  #description = "Nome da tabela de origem"
+  #description = "Source table name"
 #}
 
 variable "image_uri" {
   type = string
-  description = "URI da imagem DOCKER para os jobs do SageMaker"
+  description = "DOCKER image URI for SageMaker jobs"
 }
 
-# -- Buscar informações dos buckets existentes -- 
+# -- Search information about existing buckets -- 
 data "aws_s3_bucket" "glue" {
   bucket = var.bucket_glue
 }
@@ -156,7 +156,7 @@ data "aws_s3_bucket" "airflow" {
 resource "aws_s3_object" "raw_folder" {
   bucket = var.bucket_raw
   key    = "${var.project_name}/${var.branch_name}/${var.commit_version}/"
-  content = "" # Cria uma pasta vazia
+  content = "" # Creates an empty folder
 }
 
 resource "aws_s3_object" "processed_folder" {
@@ -201,7 +201,7 @@ resource "aws_s3_object" "models_folder" {
   content = ""
 }
 
-# -- Json files to be commited --
+# -- Json files to be committed --
 
 resource "local_file" "version" {
   filename = "${path.module}/commit_version.json"
@@ -236,4 +236,3 @@ resource "local_file" "uris" {
     ENVIRONMENT = var.environment
   })
 }
-
