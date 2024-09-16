@@ -22,6 +22,9 @@ exclude = [
     "legacy",
 ]
 
+[tool.ruff.lint]
+ignore = ["E501"]
+
 [tool.mypy] 
 check_untyped_defs = true
 
