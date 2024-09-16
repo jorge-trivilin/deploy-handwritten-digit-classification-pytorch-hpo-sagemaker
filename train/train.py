@@ -95,13 +95,13 @@ class Net(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-def _get_train_data_loader(batch_size: int, data_file: str, is_distributed: bool, **kwargs) -> tuple[DataLoader[tuple[torch.Tensor, torch.Tensor]], Optional[DistributedSampler]]:
+def _get_train_data_loader(
+    batch_size: int, data_file: str, is_distributed: bool, **kwargs
+) -> tuple[DataLoader[tuple[torch.Tensor, torch.Tensor]], Optional[DistributedSampler]]:
     logger.info("Get train data loader")
     dataset = CustomMNISTDataset(data_file=data_file)
     train_sampler: Optional[DistributedSampler] = (
-        DistributedSampler(dataset)
-        if is_distributed
-        else None
+        DistributedSampler(dataset) if is_distributed else None
     )
     data_loader = DataLoader(
         dataset,
@@ -113,12 +113,12 @@ def _get_train_data_loader(batch_size: int, data_file: str, is_distributed: bool
     return data_loader, train_sampler
 
 
-def _get_test_data_loader(test_batch_size: int, data_file: str, **kwargs) -> DataLoader[tuple[torch.Tensor, torch.Tensor]]:
+def _get_test_data_loader(
+    test_batch_size: int, data_file: str, **kwargs
+) -> DataLoader[tuple[torch.Tensor, torch.Tensor]]:
     logger.info("Get test data loader")
     dataset = CustomMNISTDataset(data_file=data_file)
-    return DataLoader(
-        dataset, batch_size=test_batch_size, shuffle=True, **kwargs
-    )
+    return DataLoader(dataset, batch_size=test_batch_size, shuffle=True, **kwargs)
 
 
 def _average_gradients(model):
@@ -128,7 +128,8 @@ def _average_gradients(model):
         dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM)
         param.grad.data /= size
 
-# Defining a custom model type 
+
+# Defining a custom model type
 ModelType = Union[Net, nn.parallel.DistributedDataParallel, nn.DataParallel]
 
 # Auxiliar function for model creation
@@ -140,6 +141,7 @@ def create_model(base_model: Net, is_distributed: bool, use_cuda: bool) -> Model
         return nn.DataParallel(base_model)
     else:
         return base_model
+
 
 def train(args):
     is_distributed = len(args.hosts) > 1 and args.backend is not None
@@ -199,14 +201,18 @@ def train(args):
             optimizer.step()
             if batch_idx % args.log_interval == 0:
                 logger.info(
-                    f"Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} " # type: ignore
+                    f"Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} "  # type: ignore
                     f"({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}"
                 )
         test(model, test_loader, device)
     save_model(model, args.model_dir)
 
 
-def test(model: ModelType, test_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]], device: torch.device):
+def test(
+    model: ModelType,
+    test_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+    device: torch.device,
+):
     model.eval()
     test_loss: float = 0.0
     correct: int = 0
@@ -215,13 +221,17 @@ def test(model: ModelType, test_loader: DataLoader[tuple[torch.Tensor, torch.Ten
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction="sum").item()  # Sum up batch loss
-            pred = output.argmax(dim=1, keepdim=True)  # Get the index of the max log-probability
+            test_loss += F.nll_loss(
+                output, target, reduction="sum"
+            ).item()  # Sum up batch loss
+            pred = output.argmax(
+                dim=1, keepdim=True
+            )  # Get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
             total += target.size(0)
 
     test_loss /= total
-    accuracy = 100. * correct / total
+    accuracy = 100.0 * correct / total
     logger.info(
         f"Test set: Average loss: {test_loss:.4f}, "
         f"Accuracy: {correct}/{total} ({accuracy:.2f}%)\n"
@@ -313,9 +323,8 @@ if __name__ == "__main__":
         "--test_data_dir", type=str, default=os.environ["SM_CHANNEL_TEST"]
     )
     parser.add_argument(
-    "--num-gpus", type=int, default=int(os.environ.get("SM_NUM_GPUS", "0"))
-)
-
+        "--num-gpus", type=int, default=int(os.environ.get("SM_NUM_GPUS", "0"))
+    )
 
     args = parser.parse_args()
 

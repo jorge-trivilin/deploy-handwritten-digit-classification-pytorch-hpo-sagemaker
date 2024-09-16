@@ -31,10 +31,11 @@ Directory Structure:
 
 import os
 from typing import List
-from torchvision.datasets import MNIST # type: ignore
-from torchvision import transforms # type: ignore
+from torchvision.datasets import MNIST  # type: ignore
+from torchvision import transforms  # type: ignore
 import torch
 from torch import Tensor
+
 
 def preprocess_mnist_data():
     try:
@@ -71,26 +72,29 @@ def preprocess_mnist_data():
         # Load all training images and labels
         train_images: List[Tensor] = []
         train_labels: List[int] = []
-        for i, (img, label) in enumerate(train_dataset): # type: ignore
+        for i, (img, label) in enumerate(train_dataset):  # type: ignore
             train_images.append(img)
             train_labels.append(label)
             if i % 10000 == 0:
                 print(f"{i} training images processed...")
 
         # Convert to tensors
-        train_images_tensor: Tensor = torch.stack(train_images)  # Dimension [N, C, H, W]
+        train_images_tensor: Tensor = torch.stack(
+            train_images
+        )  # Dimension [N, C, H, W]
         train_labels_tensor: Tensor = torch.tensor(train_labels)
 
         # Save data in a single file
         torch.save(
-            (train_images_tensor, train_labels_tensor), os.path.join(train_output_dir, "train.pt")
+            (train_images_tensor, train_labels_tensor),
+            os.path.join(train_output_dir, "train.pt"),
         )
 
         print("Processing and saving the test dataset...")
         # Load all test images and labels
         test_images: List[Tensor] = []
         test_labels: List[int] = []
-        for i, (img, label) in enumerate(test_dataset): # type: ignore
+        for i, (img, label) in enumerate(test_dataset):  # type: ignore
             test_images.append(img)
             test_labels.append(label)
             if i % 1000 == 0:
@@ -101,7 +105,10 @@ def preprocess_mnist_data():
         test_labels_tensor: Tensor = torch.tensor(test_labels)
 
         # Save data in a single file
-        torch.save((test_images_tensor, test_labels_tensor), os.path.join(test_output_dir, "test.pt"))
+        torch.save(
+            (test_images_tensor, test_labels_tensor),
+            os.path.join(test_output_dir, "test.pt"),
+        )
 
         print(
             f"Preprocessed MNIST data saved in directories {train_output_dir} and {test_output_dir}"
@@ -109,6 +116,7 @@ def preprocess_mnist_data():
     except Exception as e:
         print(f"An error occurred during preprocessing: {str(e)}")
         raise
+
 
 if __name__ == "__main__":
     preprocess_mnist_data()

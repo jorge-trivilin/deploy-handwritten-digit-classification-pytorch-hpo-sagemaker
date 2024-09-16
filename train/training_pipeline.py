@@ -85,7 +85,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-cache_config = CacheConfig(enable_caching=True, expire_after="PT7H") # type: ignore
+cache_config = CacheConfig(enable_caching=True, expire_after="PT7H")  # type: ignore
 
 
 def get_environment_variable(name, default_value=""):
@@ -374,7 +374,7 @@ def get_pipeline(
     )
     """
 
-    best_training_job_name = step_tuning.properties.BestTrainingJob.TrainingJobName # type: ignore
+    best_training_job_name = step_tuning.properties.BestTrainingJob.TrainingJobName  # type: ignore
 
     # Build the complete model URI using Join
     model_data_uri_path = Join(
@@ -419,7 +419,7 @@ def get_pipeline(
                 destination="/opt/ml/processing/model",
             ),
             ProcessingInput(
-                source=preprocessing_step.properties.ProcessingOutputConfig.Outputs[ # type: ignore
+                source=preprocessing_step.properties.ProcessingOutputConfig.Outputs[  # type: ignore
                     "processed_test_data"
                 ].S3Output.S3Uri,
                 destination="/opt/ml/processing/test",
@@ -441,7 +441,7 @@ def get_pipeline(
             s3_uri=Join(
                 on="/",
                 values=[
-                    evaluation_step.properties.ProcessingOutputConfig.Outputs[ # type: ignore
+                    evaluation_step.properties.ProcessingOutputConfig.Outputs[  # type: ignore
                         "evaluation_output"
                     ].S3Output.S3Uri,
                     "evaluation.json",
@@ -463,7 +463,7 @@ def get_pipeline(
 
     register_model_step = ModelStep(
         name="RegisterBestModel",
-        step_args=register_model_step_args, # type: ignore
+        step_args=register_model_step_args,  # type: ignore
     )
 
     # Define dependencies

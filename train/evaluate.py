@@ -86,6 +86,7 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
 
+
 # Custom class to load preprocessed data (.pt)
 class CustomMNISTDataset(Dataset):
     def __init__(self, data_file: str):
@@ -99,9 +100,11 @@ class CustomMNISTDataset(Dataset):
         label = self.labels[idx]
         return image, label
 
+
 def _get_test_data_loader(test_data_file: str, batch_size: int) -> DataLoader:
     dataset = CustomMNISTDataset(data_file=test_data_file)
     return DataLoader(dataset, batch_size=batch_size, shuffle=False)
+
 
 # Function to load the trained model
 def load_model(model_dir: str, device: torch.device) -> nn.Module:
@@ -143,10 +146,9 @@ def load_model(model_dir: str, device: torch.device) -> nn.Module:
     model.load_state_dict(new_state_dict)
     return model
 
+
 def evaluate(
-    model: nn.Module,
-    test_loader: DataLoader,
-    device: torch.device
+    model: nn.Module, test_loader: DataLoader, device: torch.device
 ) -> Tuple[float, float, float, float, float]:
     model.eval()
     test_loss: float = 0.0
@@ -180,6 +182,7 @@ def evaluate(
     logger.info(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F1 Score: {f1:.4f}")
 
     return test_loss, accuracy, precision, recall, f1
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -235,6 +238,7 @@ def main() -> None:
     logger.info(f"Saving evaluation results to {evaluation_output_path}")
     with open(evaluation_output_path, "w") as f:
         json.dump(metrics_data, f)
+
 
 if __name__ == "__main__":
     main()
