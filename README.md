@@ -47,7 +47,7 @@ The pipeline begins by preparing the MNIST dataset using the `preprocessing.py` 
 
 ### Hyperparameter Tuning
 
-The pipeline includes a hyperparameter tuning step using SageMaker’s built-in tuner, which searches for the optimal batch size and learning rate for training the model. The tuner performs random search over the defined hyperparameter space.
+The pipeline includes a hyperparameter tuning step using SageMaker’s built-in tuner, which searches for the optimal batch size and learning rate for training the model.
 
 ### Model Training
 
