@@ -250,7 +250,7 @@ def save_model(model: ModelType, model_dir):
     logger.info("Saving the model.")
     path = os.path.join(model_dir, "model.pth")
 
-    # Salva o state_dict do modelo base se for DistributedDataParallel ou DataParallel
+    # Saves the state_dict of the base model if it is DistributedDataParallel or DataParallel
     if isinstance(model, (nn.parallel.DistributedDataParallel, nn.DataParallel)):
         torch.save(model.module.state_dict(), path)
     else:
