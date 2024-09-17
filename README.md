@@ -144,7 +144,7 @@ This project integrates GitHub Actions for Continuous Integration (CI) and Conti
 - **Actions**:
   - Checks out the code.
   - Configures AWS credentials.
-  - Builds the Docker image and pushes it to ECR.
+  - Reads the IMAGE_URI from ECS.
   - Executes the SageMaker training pipeline defined in `training_pipeline.py`.
 
 ## Contributing
