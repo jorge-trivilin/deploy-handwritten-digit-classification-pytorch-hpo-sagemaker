@@ -85,6 +85,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Comment this line if you're gonna run for the first time
 cache_config = CacheConfig(enable_caching=True, expire_after="PT7H")  # type: ignore
 
 
@@ -294,7 +295,7 @@ def get_pipeline(
             ),
         ],
         code="train/preprocessing.py",
-        cache_config=cache_config,
+        cache_config=cache_config, # Comment this line if you're gonna run for the first time
     )
 
     # Training step
