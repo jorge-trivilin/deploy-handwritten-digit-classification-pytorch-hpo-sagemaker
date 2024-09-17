@@ -12,7 +12,7 @@ COPY requirements.txt /opt/ml/code/
 # Install Python libraries listed in requirements.txt and sagemaker_training_toolkit
 RUN pip install --no-cache-dir -r /opt/ml/code/requirements.txt
 
-# Copy your code into the container
+# Copy train.py into the container
 COPY train.py /opt/ml/code/train.py
 
 # Set the working directory
