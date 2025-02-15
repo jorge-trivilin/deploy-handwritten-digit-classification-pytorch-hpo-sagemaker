@@ -1,0 +1,109 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# PyTorch
+*.pth
+*.pt
+*.onnx
+.pytorch/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# SageMaker specific
+.sagemaker/
+*.tar.gz
+model/
+output/
+checkpoints/
+training/
+.aws/
+
+# Logs
+logs/
+*.log
+wandb/
+runs/
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Data files
+data/
+*.csv
+*.json
+*.h5
+*.hdf5
+*.pkl
+*.db
+*.sqlite
+
+# Environment variables
+.env*
+!.env.example
+
+# Documentation builds
+docs/_build/
+site/
+
+# Misc
+*.bak
+*.tmp
+*.temp
+.cache

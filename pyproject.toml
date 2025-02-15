@@ -1,3 +1,13 @@
+[tool.poetry]
+name = "mnist-classifier"
+version = "0.1.0"
+description = "MNIST Classifier with PyTorch and SageMaker"
+authors = ["Jorge Trivilin <jorge.trivilin@gmail.com>"]
+packages = [
+    { include = "mnist_classifier" }
+]
+
+
 [tool.black]
 line-length = 88
 exclude = '''
@@ -5,8 +15,6 @@ exclude = '''
     \.venv
     | \.ipynb_checkpoints
     | legacy
-    | venv
-    | \.venv
     | venv
     | \.venv
 )/
@@ -26,9 +34,27 @@ ignore = ["E501"]
 [tool.mypy]
 check_untyped_defs = true
 
-[tool.setup]
-name = "rfm-clustering-pca-kmeans"
-version = "0.1.0"
-description = ""
-author = "Jorge Trivilin"
-author_email = "jorge.trivilin@gmail.com"
+[tool.poetry.dependencies]
+python = "^3.11"
+torch = "^2.0.0"
+torchvision = "^0.15.0"
+pytest = "^7.0.0"
+pytest-cov = "^4.0.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.0.0"
+isort = "^5.0.0"
+flake8 = "^6.0.0"
+pytest = "^7.0.0"
+pytest-cov = "^4.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=train --cov-report=term-missing"
+log_cli = true
+log_cli_level = "INFO"
