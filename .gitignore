@@ -19,7 +19,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
+deploy-hand-pytorch/
 # Virtual Environment
 venv/
 env/
@@ -106,4 +106,4 @@ site/
 *.bak
 *.tmp
 *.temp
-.cache
+.cachedeploy-hand-pytorch/
