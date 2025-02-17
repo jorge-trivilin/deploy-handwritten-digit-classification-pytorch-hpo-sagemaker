@@ -38,8 +38,10 @@ check_untyped_defs = true
 python = "^3.11"
 torch = "^2.0.0"
 torchvision = "^0.15.0"
-pytest = "^7.0.0"
-pytest-cov = "^4.0.0"
+sagemaker = "^2.239.1"
+sagemaker-training = "^4.9.0"
+scikit-learn = "^1.6.1"
+smdebug = "^1.0.34"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.0.0"
@@ -47,6 +49,8 @@ isort = "^5.0.0"
 flake8 = "^6.0.0"
 pytest = "^7.0.0"
 pytest-cov = "^4.0.0"
+mypy = "^1.15.0"
+ruff = "^0.9.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
